@@ -19,6 +19,7 @@ import {
   type Settings,
 } from './core/bridge';
 import { isBusy, loadModels, wireChat } from './core/chatstate';
+import { loadGmail } from './core/gmailstate';
 import { git, loadRepos, setRoots } from './core/gitstate';
 import { attentionCount, loadActivity, loadPulse } from './core/ghstate';
 import {
@@ -316,6 +317,7 @@ function renderTiles() {
  */
 function setActive(v: View, expand = true) {
   active = v;
+  pet.setForm(v.id === 'ryfe' ? 'jelly' : 'moth');
   renderTiles();
   subEl.textContent = v.subtitle();
 
@@ -340,6 +342,8 @@ async function loadFor(v: View) {
     await loadRepos();
   } else if (v.id === 'gh') {
     await Promise.all([loadPulse(), loadActivity()]);
+  } else if (v.id === 'gmail') {
+    await loadGmail();
   } else if (v.id === 'ryfe') {
     await wireChat();
     await loadModels();

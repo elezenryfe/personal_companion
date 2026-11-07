@@ -150,9 +150,11 @@ function render() {
     `</div>` +
 
     `<div class="set">` +
-    `<h3>Google Calendar</h3>` +
-    `<span class="setnote">Not connected yet, and it needs one thing from you first: a <strong>Desktop app</strong> OAuth client on your own Google Cloud project. The client already in your .env is a Web one, and Google will not let a web client use the loopback redirect this needs.</span>` +
-    `<span class="setnote">Two things to get right when you make it: publish the app to <strong>In production</strong> without submitting it for verification — staying in Testing makes Google expire your login every seven days — and do not upload a logo, which would put you in the review queue.</span>` +
+    `<h3>Google</h3>` +
+    `<span class="setnote">Gmail and Calendar use a <strong>Desktop app</strong> OAuth client on your own Google Cloud project. Enable the Gmail API, create the client, and paste it here. The client already in your .env is a <strong>Web</strong> one and cannot use the loopback redirect this needs.</span>` +
+    field('google-client-id', 'Desktop OAuth client ID', 'Google Cloud Console → APIs & Services → Credentials → Create credentials → OAuth client ID → Desktop app.', 'text') +
+    field('google-client-secret', 'Client secret', 'Stored in Windows Credential Manager and used only in the local token exchange.', 'password') +
+    `<span class="setnote">Publish the OAuth consent screen to <strong>In production</strong> without submitting it for verification — staying in Testing makes Google expire your login every seven days. Do not upload a logo, which puts you in the review queue.</span>` +
     `</div>` +
     `</div>`
   );

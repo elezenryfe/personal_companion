@@ -1,9 +1,11 @@
 /**
- * Pulsar — a moth, drawn entirely in code.
+ * Pulsar — two small creatures, drawn entirely in code.
  *
- * Paper wings, an ink line, and two antennae that carry the state's light. The
- * movement is the island's: eyes follow the cursor, the body breathes, alert
- * bounces, listening tilts, and a greeting is a quick flutter.
+ * The moth is the island's default: paper wings, an ink line, and antennae that
+ * carry the state's light. The jelly is what the assistant tab shows: a pulsing
+ * bell and four drifting arms. Both share the same movement — eyes follow the
+ * cursor, the body breathes, alert bounces, listening tilts, and a greeting is a
+ * quick flutter.
  *
  * Four states, each a whole mood rather than a colour swap:
  *   idle       pale lights, slow wing beats, breathing
@@ -15,6 +17,7 @@
 import { clamp, lerp, TAU } from '../core/anim';
 
 export type PetState = 'idle' | 'working' | 'alert' | 'listening';
+export type PetForm = 'moth' | 'jelly';
 
 type Rgb = [number, number, number];
 type EyeShape = 'pill' | 'wide' | 'happy' | 'flat';
@@ -39,6 +42,8 @@ const STATES: Record<PetState, Spec> = {
 const INK = '#111820';
 const PAPER_TOP: Rgb = [0.949, 0.937, 0.902];
 const PAPER_BOTTOM: Rgb = [0.831, 0.816, 0.776];
+const CHALK_TOP: Rgb = [0.937, 0.953, 0.965];
+const CHALK_BOTTOM: Rgb = [0.796, 0.827, 0.855];
 
 const now = () => performance.now() / 1000;
 
@@ -159,6 +164,7 @@ function mothWingPath(R: number, upper: boolean): Path2D {
 export class PetEngine {
   private state: PetState = 'idle';
   private spec: Spec = STATES.idle;
+  private form: PetForm = 'moth';
 
   private col: Rgb = [...STATES.idle.color] as Rgb;
   private colT: Rgb = [...STATES.idle.color] as Rgb;
@@ -185,6 +191,11 @@ export class PetEngine {
   private greetStart = -10;
   private phase = 0;
   private t0 = now() - Math.random() * 4;
+
+  /** Which body to draw. The assistant tab uses the jelly. */
+  setForm(form: PetForm) {
+    this.form = form;
+  }
 
   setState(next: PetState) {
     if (next === this.state) return;
@@ -277,13 +288,14 @@ export class PetEngine {
     ctx.translate(cx, cy);
     if (this.tilt) ctx.rotate(this.tilt);
     ctx.scale(this.sx, this.sy);
-    this.render(ctx, R);
+    if (this.form === 'jelly') this.renderJelly(ctx, R);
+    else this.renderMoth(ctx, R);
     ctx.restore();
 
     if (this.badge) this.drawBadge(ctx, R, w / 2 - R * 0.95, cy - R * 0.95, this.badge);
   }
 
-  private render(ctx: CanvasRenderingContext2D, R: number) {
+  private renderMoth(ctx: CanvasRenderingContext2D, R: number) {
     const t = this.phase;
     const speed = this.state === 'working' ? 2.4 : this.state === 'alert' ? 3.4 : 1.6;
     const amp = this.state === 'alert' ? 0.3 : this.state === 'listening' ? 0.08 : 0.15;
@@ -387,6 +399,94 @@ export class PetEngine {
       this.lookY,
       INK,
     );
+  }
+
+  private renderJelly(ctx: CanvasRenderingContext2D, R: number) {
+    const t = this.phase;
+    const g = this.greetK;
+    const pace = this.state === 'working' ? 2.4 : this.state === 'alert' ? 3.2 : 1;
+    const beat =
+      Math.sin(t * pace * 1.7) * 0.028 +
+      (g > 0 && g < 1 ? Math.sin(g * Math.PI) * 0.05 : 0);
+    const alertSquash = this.state === 'alert' ? Math.sin(t * 6) * 0.02 : 0;
+
+    const glow = ctx.createRadialGradient(0, -0.15 * R, R * 0.1, 0, -0.15 * R, R * 1.15);
+    glow.addColorStop(0, rgba(this.col, 0.16 + 0.3 * this.tint));
+    glow.addColorStop(1, rgba(this.col, 0));
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, -0.15 * R, R * 1.15, 0, TAU);
+    ctx.fill();
+
+    ctx.save();
+    ctx.scale(1 + beat + alertSquash, 1 - beat * 0.8 - alertSquash);
+
+    for (let i = 0; i < 4; i++) {
+      const bx = (-0.36 + i * 0.24) * R;
+      const drift = Math.sin(t * 1.5 + i * 1.1) * R;
+      const splay = g > 0 && g < 1 ? Math.sin(g * Math.PI) * 0.25 * R : 0;
+      const len = (0.95 + (i % 2) * 0.18) * R;
+      const grad = ctx.createLinearGradient(0, 0.1 * R, 0, 0.1 * R + len);
+      grad.addColorStop(0, 'rgba(17,24,32,0.55)');
+      grad.addColorStop(1, rgba(this.col, 0.95));
+      ctx.beginPath();
+      ctx.moveTo(bx, 0.08 * R);
+      ctx.bezierCurveTo(
+        bx + drift * 0.1 + splay * (i - 1.5),
+        0.45 * R,
+        bx - drift * 0.1 - splay * (i - 1.5),
+        0.82 * R,
+        bx + drift * 0.06 + splay * (i - 1.5),
+        0.1 * R + len,
+      );
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = Math.max(1.2, R * 0.045);
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+
+    const bell = new Path2D();
+    bell.moveTo(-0.82 * R, 0.08 * R);
+    bell.bezierCurveTo(-0.9 * R, -0.5 * R, -0.5 * R, -0.92 * R, 0, -0.92 * R);
+    bell.bezierCurveTo(0.5 * R, -0.92 * R, 0.9 * R, -0.5 * R, 0.82 * R, 0.08 * R);
+    bell.quadraticCurveTo(0.4 * R, 0.22 * R, 0, 0.12 * R);
+    bell.quadraticCurveTo(-0.4 * R, 0.22 * R, -0.82 * R, 0.08 * R);
+    bell.closePath();
+
+    ctx.fillStyle = fillGrad(ctx, -0.6 * R, -0.9 * R, 0.6 * R, 0.2 * R, CHALK_TOP, CHALK_BOTTOM);
+    ctx.fill(bell);
+    if (this.tint > 0.01) {
+      ctx.fillStyle = rgba(this.col, 0.3 * this.tint);
+      ctx.fill(bell);
+    }
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = Math.max(1, R * 0.04);
+    ctx.stroke(bell);
+
+    ctx.save();
+    ctx.clip(bell);
+    const hl = ctx.createRadialGradient(-0.3 * R, -0.5 * R, 0, -0.3 * R, -0.5 * R, R * 0.55);
+    hl.addColorStop(0, 'rgba(255,255,255,0.5)');
+    hl.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = hl;
+    ctx.fillRect(-R, -R, 2 * R, 2 * R);
+    ctx.restore();
+
+    drawEyes(
+      ctx,
+      0,
+      -0.3 * R,
+      0.26 * R,
+      0.18 * R,
+      0.2 * R,
+      this.eyeShape(),
+      this.open,
+      this.lookX,
+      this.lookY,
+      INK,
+    );
+
+    ctx.restore();
   }
 
   private drawBadge(

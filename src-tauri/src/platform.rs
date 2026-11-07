@@ -146,9 +146,9 @@ pub fn set_accept_mouse(window: &WebviewWindow, accept: bool) -> Result<(), Stri
 /// Hands a link to the user's own browser.
 ///
 /// Narrow on purpose. Only http and https get through, and a quote or a newline
-/// is refused: the URL is passed to `start` inside double quotes, so `&` and the
-/// other cmd metacharacters are inert, but a quote would break out of them.
-/// Opening a link is not a general-purpose way to launch a program.
+/// is refused. Explorer is started directly rather than through `cmd`, so the
+/// `&` in a query string stays part of the URL instead of becoming a command
+/// separator. Opening a link is not a general-purpose way to launch a program.
 #[tauri::command]
 pub fn open_url(url: String) -> Result<(), String> {
     let looks_like_a_link = url.starts_with("https://") || url.starts_with("http://");
@@ -162,8 +162,8 @@ pub fn open_url(url: String) -> Result<(), String> {
     {
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        std::process::Command::new("cmd")
-            .args(["/C", "start", "", &url])
+        std::process::Command::new("explorer")
+            .arg(&url)
             .creation_flags(CREATE_NO_WINDOW)
             .spawn()
             .map_err(|e| format!("could not open the link: {e}"))?;

@@ -11,6 +11,7 @@
 //!   reached only through commands.
 
 mod ai;
+mod gmail;
 mod git;
 mod github;
 mod island;
@@ -147,6 +148,13 @@ pub fn run() {
             ai::ai_models,
             ai::ai_send,
             ai::ai_reset,
+            gmail::gmail_status,
+            gmail::gmail_connect,
+            gmail::gmail_disconnect,
+            gmail::gmail_inbox,
+            gmail::gmail_archive,
+            gmail::gmail_mark_read,
+            gmail::gmail_draft,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();

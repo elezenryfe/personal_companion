@@ -39,6 +39,21 @@ import {
   subtitle,
   type PullRequest,
 } from '../core/ghstate';
+import {
+  askArchive,
+  askRead,
+  cancelComposer,
+  cancelPending,
+  composeReply,
+  confirmPending,
+  connectGmail,
+  createDraft,
+  disconnectGmail,
+  gmail,
+  loadGmail,
+  mailSubtitle,
+  type Mail,
+} from '../core/gmailstate';
 import { refresh, toggleTall } from './host';
 import {
   GEAR,
@@ -69,7 +84,8 @@ const GLYPH = {
   git: '<circle cx="5" cy="4.4" r="1.9"/><circle cx="5" cy="14.6" r="1.9"/><circle cx="14" cy="7.4" r="1.9"/><path d="M5 6.3v6.4M6.9 4.4h3.6a2.5 2.5 0 0 1 2.5 2.5v.5"/>',
   gh: '<path d="M10 2.2A7.3 7.3 0 0 0 7.7 16.4c.36.06.5-.16.5-.35v-1.3c-2 .44-2.44-.96-2.44-.96-.33-.84-.8-1.06-.8-1.06-.66-.45.05-.44.05-.44.73.05 1.1.75 1.1.75.65 1.1 1.7.78 2.1.6.07-.47.26-.79.46-.97-1.6-.18-3.3-.8-3.3-3.58 0-.79.29-1.44.75-1.94-.08-.19-.33-.93.07-1.93 0 0 .61-.2 2 .75a6.9 6.9 0 0 1 3.64 0c1.39-.95 2-.75 2-.75.4 1 .15 1.74.08 1.93.47.5.75 1.15.75 1.94 0 2.79-1.7 3.4-3.32 3.57.26.23.5.67.5 1.36v2c0 .2.13.42.5.35A7.3 7.3 0 0 0 10 2.2Z"/>',
   cal: '<rect x="2.5" y="4" width="15" height="13.5" rx="2.5"/><path d="M2.5 8h15M6 2.2v3.4M14 2.2v3.4M6.2 11.6h2.2M11.6 11.6h2.2"/>',
-  ryfe: '<circle cx="10" cy="10" r="3.2"/><ellipse cx="10" cy="10" rx="8.2" ry="2.6" transform="rotate(-22 10 10)"/>',
+  mail: '<rect x="2.5" y="4.5" width="15" height="11" rx="2"/><path d="m3 6 7 5 7-5"/>',
+  jelly: '<path d="M3.2 10.2C3.2 6.5 6.2 3.6 10 3.6s6.8 2.9 6.8 6.6c0 .5-.4.9-.9.9H4.1c-.5 0-.9-.4-.9-.9Z"/><path d="M5.1 11.7v3.8M8.4 11.7v5M11.6 11.7v5M14.9 11.7v3.8"/><circle cx="7.7" cy="7.9" r=".85" fill="currentColor" stroke="none"/><circle cx="12.3" cy="7.9" r=".85" fill="currentColor" stroke="none"/>',
 };
 
 export function svg(glyph: string, size = 17, box = '0 0 20 20'): string {
@@ -726,8 +742,196 @@ export const calendarView: View = {
       'Google Calendar is not connected yet',
       'It needs a Desktop OAuth client on your own Google Cloud project —',
       'the client you already have is a Web one and cannot work here.',
-      'Settings → Calendar walks through it.',
+      'Settings → Google walks through it.',
     ),
+};
+
+// ---------------------------------------------------------------------------
+// Gmail
+// ---------------------------------------------------------------------------
+
+function mailTime(ms: number): string {
+  if (!ms) return '';
+  const date = new Date(ms);
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function mailRow(mail: Mail): string {
+  const thread = encodeURIComponent(mail.thread_id);
+  return (
+    `<div class="mailrow${mail.unread ? ' unread' : ''}" data-mail-url="https://mail.google.com/mail/u/0/#inbox/${thread}">` +
+    `<span class="maildot"></span>` +
+    `<span class="mailmain">` +
+    `<span class="mailtop"><span class="mailfrom">${esc(mail.from || 'unknown sender')}</span>` +
+    `<span class="mailtime">${mailTime(mail.date)}</span></span>` +
+    `<span class="mailsubject">${esc(mail.subject || '(no subject)')}</span>` +
+    `<span class="mailsnippet">${esc(mail.snippet)}</span>` +
+    `</span>` +
+    `<span class="mailacts">` +
+    `<button class="btn ghost mini" data-mail-archive="${esc(mail.id)}" title="Archive">Archive</button>` +
+    (mail.unread
+      ? `<button class="btn ghost mini" data-mail-read="${esc(mail.id)}" title="Mark read">Read</button>`
+      : '') +
+    `<button class="btn ghost mini" data-mail-reply="${esc(mail.id)}" title="Draft a reply">Reply</button>` +
+    `</span>` +
+    `</div>`
+  );
+}
+
+function mailPendingCard(): string {
+  const pending = gmail.pending;
+  if (!pending) return '';
+  const verb = pending.kind === 'archive' ? 'Archive' : 'Mark read';
+  return (
+    `<div class="prop mailprop"><div class="prophead"><span>${verb}</span>` +
+    `<span class="chip">changes Gmail</span></div>` +
+    `<div class="hintline">${verb} “${esc(pending.subject || '(no subject)')}”?</div>` +
+    `<div class="commitrow"><button class="btn" data-mail-confirm>${verb}</button>` +
+    `<button class="btn ghost" data-mail-cancel>Cancel</button></div></div>`
+  );
+}
+
+function mailComposerCard(): string {
+  const composer = gmail.composer;
+  if (!composer) return '';
+  return (
+    `<div class="prop mailprop"><div class="prophead"><span>Reply to ${esc(composer.from)}</span>` +
+    `<span class="chip">draft</span></div>` +
+    `<div class="hintline">${esc(composer.subject || '(no subject)')}</div>` +
+    `<textarea id="maildraft" class="maildraft" rows="4" spellcheck="true" ` +
+    `placeholder="Write the reply. This creates a draft; it does not send.">${esc(gmail.draftText)}</textarea>` +
+    `<div class="commitrow"><button class="btn" data-mail-draft ${gmail.drafting ? 'disabled' : ''}>Create draft</button>` +
+    `<button class="btn ghost" data-mail-cancel-draft>Cancel</button></div></div>`
+  );
+}
+
+function gmailHtml(): string {
+  if (!gmail.status) {
+    return head('Gmail', 'checking…') + emptyState('Checking Gmail…');
+  }
+
+  if (!gmail.status.configured) {
+    return (
+      head('Gmail', 'setup needed') +
+      emptyState(
+        'Gmail needs a Google client',
+        'Create a Desktop app OAuth client on your own Google Cloud project and enable the Gmail API.',
+        'Put its client ID and secret in Settings → Google, then come back here.',
+        'Publish the OAuth consent screen to In production without submitting it for review — otherwise Google expires the login after seven days.',
+      )
+    );
+  }
+
+  if (!gmail.status.connected) {
+    return (
+      head('Gmail', 'not connected') +
+      (gmail.error ? `<div class="hintline bad">${esc(gmail.error)}</div>` : '') +
+      emptyState(
+        'Gmail is not connected',
+        'The client is saved. Connect once and Ryfe keeps only a refresh token, in the Windows credential store.',
+        'It asks for gmail.modify: read, archive, mark read, and create drafts. It cannot send.',
+      ) +
+      `<div class="commitrow"><button class="btn" data-mail-connect ${gmail.connecting ? 'disabled' : ''}>` +
+      `${gmail.connecting ? 'Waiting for Google…' : 'Connect Gmail'}</button></div>`
+    );
+  }
+
+  const inbox = gmail.inbox;
+  const messages =
+    inbox && inbox.messages.length
+      ? inbox.messages.map(mailRow).join('')
+      : emptyState(inbox ? 'Inbox is empty' : 'Reading your inbox…');
+
+  return (
+    head('Gmail', inbox ? `${inbox.unread} unread · ${esc(inbox.email)}` : 'reading…') +
+    (gmail.error ? `<div class="hintline bad">${esc(gmail.error)}</div>` : '') +
+    (gmail.notice ? `<div class="hintline">${esc(gmail.notice)}</div>` : '') +
+    mailPendingCard() +
+    mailComposerCard() +
+    `<div class="scroll mailscroll">${messages}</div>` +
+    `<div class="commitrow"><button class="btn ghost" data-mail-refresh>Refresh</button>` +
+    `<button class="btn ghost" data-mail-disconnect>Disconnect</button></div>`
+  );
+}
+
+function gmailMount(root: HTMLElement) {
+  root.querySelector<HTMLButtonElement>('[data-mail-connect]')?.addEventListener('click', () => {
+    void connectGmail();
+  });
+  root.querySelector<HTMLButtonElement>('[data-mail-refresh]')?.addEventListener('click', () => {
+    void loadGmail(true);
+  });
+  root.querySelector<HTMLButtonElement>('[data-mail-disconnect]')?.addEventListener('click', () => {
+    void disconnectGmail();
+  });
+  root.querySelector<HTMLButtonElement>('[data-mail-confirm]')?.addEventListener('click', () => {
+    void confirmPending();
+  });
+  root.querySelector<HTMLButtonElement>('[data-mail-cancel]')?.addEventListener('click', () => {
+    cancelPending();
+  });
+  root.querySelector<HTMLButtonElement>('[data-mail-cancel-draft]')?.addEventListener('click', () => {
+    cancelComposer();
+  });
+  root.querySelector<HTMLButtonElement>('[data-mail-draft]')?.addEventListener('click', () => {
+    const text = root.querySelector<HTMLTextAreaElement>('#maildraft')?.value ?? '';
+    void createDraft(text);
+  });
+
+  const find = (id: string) => gmail.inbox?.messages.find((mail) => mail.id === id);
+
+  root.querySelectorAll<HTMLButtonElement>('[data-mail-archive]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const mail = find(button.dataset.mailArchive ?? '');
+      if (mail) askArchive(mail);
+    });
+  });
+  root.querySelectorAll<HTMLButtonElement>('[data-mail-read]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const mail = find(button.dataset.mailRead ?? '');
+      if (mail) askRead(mail);
+    });
+  });
+  root.querySelectorAll<HTMLButtonElement>('[data-mail-reply]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const mail = find(button.dataset.mailReply ?? '');
+      if (mail) composeReply(mail);
+    });
+  });
+
+  root.querySelectorAll<HTMLElement>('.mailrow').forEach((row) => {
+    row.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('button')) return;
+      const url = row.dataset.mailUrl;
+      if (url) void openExternal(url);
+    });
+  });
+
+  const draft = root.querySelector<HTMLTextAreaElement>('#maildraft');
+  if (draft) {
+    draft.addEventListener('input', () => {
+      gmail.draftText = draft.value;
+    });
+    draft.focus({ preventScroll: true });
+    draft.setSelectionRange(draft.value.length, draft.value.length);
+  }
+}
+
+export const gmailView: View = {
+  id: 'gmail',
+  label: 'Gmail',
+  hue: 'var(--c-mail)',
+  glyph: GLYPH.mail,
+  subtitle: mailSubtitle,
+  render: gmailHtml,
+  mount: gmailMount,
 };
 
 // ---------------------------------------------------------------------------
@@ -807,7 +1011,7 @@ export const chatView: View = {
   // `--acc` on the panel, so that would be a cycle and every button in here
   // would come out with no background at all.
   hue: 'var(--acc-b)',
-  glyph: GLYPH.ryfe,
+  glyph: GLYPH.jelly,
 
   subtitle() {
     if (chat.busy) {
@@ -945,7 +1149,7 @@ export const settingsView: View = {
   },
 };
 
-export const VIEWS: View[] = [gitView, githubView, calendarView, chatView];
+export const VIEWS: View[] = [gitView, githubView, calendarView, gmailView, chatView];
 
 /** Everything the shell can show, including the views with no tile. */
 export const ALL_VIEWS: View[] = [...VIEWS, settingsView];
