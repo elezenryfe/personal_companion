@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Ryfe is a small Windows desktop companion for your code, pull requests, and inbox.">
+<title>Ryfe — a small machine for your work</title>
+<style>
+:root{color-scheme:dark;--bg:#080a0f;--panel:#111620;--line:#222c3a;--muted:#a5b0c0;--text:#eef3fa;--accent:#a8c7ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 70% 0%,#18243a 0,transparent 42%),var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,Segoe UI,sans-serif}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}.wrap{max-width:1040px;margin:auto;padding:28px 24px 80px}
+nav{display:flex;justify-content:space-between;align-items:center;padding:12px 0 70px}.brand{font-weight:750;letter-spacing:.04em;font-size:1.15rem}.navlinks{display:flex;gap:22px;color:var(--muted);font-size:.94rem}
+.hero{max-width:760px;padding:30px 0 72px}.eyebrow{color:var(--accent);font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;font-weight:700}
+h1{font-size:clamp(3rem,8vw,6.3rem);line-height:.98;letter-spacing:-.065em;margin:18px 0 24px}.lead{font-size:1.25rem;color:#c3ccda;max-width:650px}
+.actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:32px}.btn{display:inline-block;padding:12px 18px;border-radius:12px;border:1px solid var(--line);font-weight:650}.primary{background:#dce9ff;color:#101827;border-color:#dce9ff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:18px}.card{background:linear-gradient(145deg,#141c29,#0e131c);border:1px solid var(--line);border-radius:18px;padding:22px}.card h2{font-size:1.08rem;margin:0 0 8px}.card p{margin:0;color:var(--muted)}
+h2.section{font-size:1.8rem;letter-spacing:-.035em;margin:62px 0 8px}.sub{color:var(--muted);max-width:700px}
+.note{margin-top:40px;padding:18px 20px;border-left:2px solid #718db7;background:#111824;color:#bac5d5;border-radius:0 12px 12px 0}
+footer{border-top:1px solid var(--line);margin-top:70px;padding-top:22px;color:var(--muted);font-size:.9rem;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+@media(max-width:560px){nav{padding-bottom:42px}.navlinks{gap:12px}.hero{padding-bottom:48px}}
+</style></head>
+<body><main class="wrap">
+<nav><a class="brand" href="/">RYFE</a><div class="navlinks"><a href="#features">What it does</a><a href="privacy.html">Privacy</a><a href="https://github.com/elezenryfe/ryfe">GitHub</a></div></nav>
+<section class="hero"><div class="eyebrow">A Windows desktop companion</div><h1>Your work,<br>within reach.</h1><p class="lead">Ryfe is a small, always-on-top desktop island for keeping an eye on your local repositories, GitHub pull requests, and Gmail — without turning your whole screen into a dashboard.</p>
+<div class="actions"><a class="btn primary" href="https://github.com/elezenryfe/ryfe">Explore the source on GitHub ↗</a><a class="btn" href="privacy.html">Read the privacy policy</a></div></section>
+<section id="features"><div class="eyebrow">Built to stay out of the way</div><h2 class="section">A little context, right where you need it.</h2><p class="sub">Ryfe brings a few useful parts of your development workflow into one compact interface.</p>
+<div class="grid">
+<article class="card"><h2>Local repositories</h2><p>See your projects, branches, working-tree changes, diffs, and repository status.</p></article>
+<article class="card"><h2>GitHub pull requests</h2><p>Keep track of pull requests you opened and reviews waiting for you, including CI status.</p></article>
+<article class="card"><h2>Gmail</h2><p>View recent inbox message details, archive messages, mark them as read, and create drafts. Ryfe does not send email.</p></article>
+<article class="card"><h2>AI assistant</h2><p>Ask questions about your work with an assistant that can use supported read-only tools and propose changes for your approval.</p></article>
+</div></section>
+<div class="note">Ryfe is a locally installed Windows application. Its source code is public; integrations are configured by the person using the app. Review the source and the <a href="privacy.html">privacy policy</a> before connecting accounts.</div>
+<footer><span>© 2026 Ryfe · Open-source project</span><span><a href="privacy.html">Privacy</a> · <a href="https://github.com/elezenryfe/ryfe">Source code</a> · <a href="https://github.com/elezenryfe/ryfe/issues">Contact / support</a></span></footer>
+</main></body></html>
