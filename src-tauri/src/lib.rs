@@ -18,6 +18,7 @@ mod island;
 mod platform;
 mod secrets;
 mod settings;
+mod whatsapp;
 
 use std::sync::Arc;
 
@@ -155,6 +156,7 @@ pub fn run() {
             gmail::gmail_archive,
             gmail::gmail_mark_read,
             gmail::gmail_draft,
+            whatsapp::whatsapp_open,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();

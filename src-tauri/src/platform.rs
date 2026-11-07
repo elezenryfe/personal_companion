@@ -146,9 +146,10 @@ pub fn set_accept_mouse(window: &WebviewWindow, accept: bool) -> Result<(), Stri
 /// Hands a link to the user's own browser.
 ///
 /// Narrow on purpose. Only http and https get through, and a quote or a newline
-/// is refused. Explorer is started directly rather than through `cmd`, so the
-/// `&` in a query string stays part of the URL instead of becoming a command
-/// separator. Opening a link is not a general-purpose way to launch a program.
+/// is refused. The URL goes to ShellExecuteW as one string, so the `&` in a
+/// query string stays part of the URL. Explorer was tried first and opened
+/// Documents instead of the browser for long OAuth URLs. Opening a link is not
+/// a general-purpose way to launch a program.
 #[tauri::command]
 pub fn open_url(url: String) -> Result<(), String> {
     let looks_like_a_link = url.starts_with("https://") || url.starts_with("http://");
@@ -160,13 +161,27 @@ pub fn open_url(url: String) -> Result<(), String> {
 
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        std::process::Command::new("explorer")
-            .arg(&url)
-            .creation_flags(CREATE_NO_WINDOW)
-            .spawn()
-            .map_err(|e| format!("could not open the link: {e}"))?;
+        use windows::core::{HSTRING, PCWSTR};
+        use windows::Win32::UI::Shell::ShellExecuteW;
+        use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+
+        let operation = HSTRING::from("open");
+        let target = HSTRING::from(url.as_str());
+        // ShellExecuteW hands a URL to its registered handler; it returns a
+        // value above 32 on success.
+        let launched = unsafe {
+            ShellExecuteW(
+                None,
+                &operation,
+                &target,
+                PCWSTR::null(),
+                PCWSTR::null(),
+                SW_SHOWNORMAL,
+            )
+        };
+        if launched.0 as isize <= 32 {
+            return Err("could not open the link".to_string());
+        }
     }
 
     #[cfg(not(windows))]

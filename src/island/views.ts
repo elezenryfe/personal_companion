@@ -7,7 +7,7 @@
  * a new module.
  */
 
-import { openExternal } from '../core/bridge';
+import { openExternal, whatsappOpen } from '../core/bridge';
 import {
   approveProposal,
   chat,
@@ -52,6 +52,7 @@ import {
   gmail,
   loadGmail,
   mailSubtitle,
+  selectAccount,
   type Mail,
 } from '../core/gmailstate';
 import { refresh, toggleTall } from './host';
@@ -83,8 +84,9 @@ export interface View {
 const GLYPH = {
   git: '<circle cx="5" cy="4.4" r="1.9"/><circle cx="5" cy="14.6" r="1.9"/><circle cx="14" cy="7.4" r="1.9"/><path d="M5 6.3v6.4M6.9 4.4h3.6a2.5 2.5 0 0 1 2.5 2.5v.5"/>',
   gh: '<path d="M10 2.2A7.3 7.3 0 0 0 7.7 16.4c.36.06.5-.16.5-.35v-1.3c-2 .44-2.44-.96-2.44-.96-.33-.84-.8-1.06-.8-1.06-.66-.45.05-.44.05-.44.73.05 1.1.75 1.1.75.65 1.1 1.7.78 2.1.6.07-.47.26-.79.46-.97-1.6-.18-3.3-.8-3.3-3.58 0-.79.29-1.44.75-1.94-.08-.19-.33-.93.07-1.93 0 0 .61-.2 2 .75a6.9 6.9 0 0 1 3.64 0c1.39-.95 2-.75 2-.75.4 1 .15 1.74.08 1.93.47.5.75 1.15.75 1.94 0 2.79-1.7 3.4-3.32 3.57.26.23.5.67.5 1.36v2c0 .2.13.42.5.35A7.3 7.3 0 0 0 10 2.2Z"/>',
-  cal: '<rect x="2.5" y="4" width="15" height="13.5" rx="2.5"/><path d="M2.5 8h15M6 2.2v3.4M14 2.2v3.4M6.2 11.6h2.2M11.6 11.6h2.2"/>',
+  now: '<circle cx="10" cy="10" r="7.3"/><path d="M10 5.6V10l3 1.8"/>',
   mail: '<rect x="2.5" y="4.5" width="15" height="11" rx="2"/><path d="m3 6 7 5 7-5"/>',
+  wa: '<path d="M10 2.7a7.1 7.1 0 0 0-6.1 10.7l-1.1 3.6 3.7-1.1A7.1 7.1 0 1 0 10 2.7Z"/><path d="M7.2 6.4c.2-.06.5.03.63.3l.55 1.05c.1.2.07.45-.08.62l-.4.42a4.9 4.9 0 0 0 2.3 2.3l.42-.4c.17-.15.42-.18.62-.08l1.05.55c.27.13.36.43.3.63-.14.5-.6.9-1.1.9-2.3 0-5-2.7-5-5 0-.5.4-.96.9-1.1Z"/>',
   jelly: '<path d="M3.2 10.2C3.2 6.5 6.2 3.6 10 3.6s6.8 2.9 6.8 6.6c0 .5-.4.9-.9.9H4.1c-.5 0-.9-.4-.9-.9Z"/><path d="M5.1 11.7v3.8M8.4 11.7v5M11.6 11.7v5M14.9 11.7v3.8"/><circle cx="7.7" cy="7.9" r=".85" fill="currentColor" stroke="none"/><circle cx="12.3" cy="7.9" r=".85" fill="currentColor" stroke="none"/>',
 };
 
@@ -726,24 +728,117 @@ function sparkline(): string {
   return `<div class="spark">${cells}</div>`;
 }
 
-// ---------------------------------------------------------------------------
-// Calendar
-// ---------------------------------------------------------------------------
+/** Counts everything waiting across the tabs. */
+function nowAwaiting(): number {
+  const review = gh.pulse?.reviewing.length ?? 0;
+  const failing = (gh.pulse?.authored ?? []).filter(
+    (p) => p.ci === 'failure' || p.ci === 'error',
+  ).length;
+  const unread = gmail.inbox?.unread ?? 0;
+  const dirty = git.repos.filter((r) => r.has_git && (r.dirty ?? 0) > 0).length;
+  return review + failing + unread + dirty;
+}
 
-export const calendarView: View = {
-  id: 'cal',
-  label: 'Calendar',
-  hue: 'var(--c-cal)',
-  glyph: GLYPH.cal,
-  subtitle: () => 'not connected',
-  render: () =>
-    head('Calendar', 'not connected') +
-    emptyState(
-      'Google Calendar is not connected yet',
-      'It needs a Desktop OAuth client on your own Google Cloud project —',
-      'the client you already have is a Web one and cannot work here.',
-      'Settings → Google walks through it.',
-    ),
+function nowSubtitle(): string {
+  if (!gh.pulse && !gmail.status && git.repos.length === 0) return 'reading…';
+  const n = nowAwaiting();
+  return n === 0 ? 'all quiet' : `${n > 99 ? '99+' : n} waiting`;
+}
+
+/** The waiting items from GitHub, Gmail and git, in the order to read them. */
+function nowSections(): string[] {
+  const parts: string[] = [];
+
+  const review = gh.pulse?.reviewing ?? [];
+  if (review.length) {
+    parts.push(sectionLabel('Waiting on your review', review.length));
+    parts.push(review.map(prRow).join(''));
+  }
+
+  const failing = (gh.pulse?.authored ?? []).filter(
+    (p) => p.ci === 'failure' || p.ci === 'error',
+  );
+  if (failing.length) {
+    parts.push(sectionLabel('Checks failing', failing.length));
+    parts.push(failing.map(prRow).join(''));
+  }
+
+  const unread = gmail.inbox?.messages.filter((m) => m.unread).slice(0, 5) ?? [];
+  if (gmail.inbox?.unread) {
+    const base = `https://mail.google.com/mail/?authuser=${encodeURIComponent(gmail.account ?? '')}`;
+    parts.push(sectionLabel('Unread mail', gmail.inbox.unread));
+    parts.push(
+      unread.length
+        ? unread
+            .map((m) =>
+              row({
+                title: esc(m.from || 'unknown sender'),
+                sub: esc(m.subject || '(no subject)'),
+                chip: mailTime(m.date),
+                clickable: true,
+                attrs: `data-mail-url="${base}#inbox/${encodeURIComponent(m.thread_id)}"`,
+              }),
+            )
+            .join('')
+        : row({
+            title: `${gmail.inbox.unread} unread in Gmail`,
+            sub: esc(gmail.inbox.email),
+            clickable: true,
+            attrs: `data-mail-url="${base}#inbox"`,
+          }),
+    );
+  }
+
+  const dirty = git.repos.filter((r) => r.has_git && (r.dirty ?? 0) > 0);
+  if (dirty.length) {
+    parts.push(sectionLabel('Uncommitted changes', dirty.length));
+    parts.push(
+      dirty
+        .map((r) => row({ title: esc(r.name), sub: `${r.dirty ?? 0} changed` }))
+        .join(''),
+    );
+  }
+
+  return parts;
+}
+
+export const nowView: View = {
+  id: 'now',
+  label: 'Now',
+  hue: 'var(--c-now)',
+  glyph: GLYPH.now,
+  subtitle: nowSubtitle,
+
+  render() {
+    const parts = nowSections();
+    const loaded = gh.pulse || gmail.status || git.repos.length > 0;
+    const body = parts.length
+      ? `<div class="scroll">${parts.join('')}</div>`
+      : loaded
+        ? emptyState(
+            'Nothing needs you',
+            'No review requests, failing checks, unread mail or uncommitted changes.',
+          )
+        : emptyState('Reading what needs you…');
+    return (
+      head('Now', nowSubtitle()) +
+      body +
+      `<div class="commitrow"><button class="btn ghost" id="now-refresh">Refresh</button></div>`
+    );
+  },
+
+  mount(root) {
+    root.querySelector('#now-refresh')?.addEventListener('click', () => {
+      void Promise.all([loadPulse(true), loadGmail(true), loadRepos(true)]);
+    });
+    root
+      .querySelectorAll<HTMLElement>('[data-url], [data-mail-url]')
+      .forEach((el) => {
+        el.addEventListener('click', () => {
+          void openExternal(el.dataset.url ?? el.dataset.mailUrl ?? '');
+        });
+      });
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -762,8 +857,9 @@ function mailTime(ms: number): string {
 
 function mailRow(mail: Mail): string {
   const thread = encodeURIComponent(mail.thread_id);
+  const who = encodeURIComponent(gmail.account ?? '');
   return (
-    `<div class="mailrow${mail.unread ? ' unread' : ''}" data-mail-url="https://mail.google.com/mail/u/0/#inbox/${thread}">` +
+    `<div class="mailrow${mail.unread ? ' unread' : ''}" data-mail-url="https://mail.google.com/mail/?authuser=${who}#inbox/${thread}">` +
     `<span class="maildot"></span>` +
     `<span class="mailmain">` +
     `<span class="mailtop"><span class="mailfrom">${esc(mail.from || 'unknown sender')}</span>` +
@@ -846,10 +942,25 @@ function gmailHtml(): string {
       ? inbox.messages.map(mailRow).join('')
       : emptyState(inbox ? 'Inbox is empty' : 'Reading your inbox…');
 
+  const picker =
+    `<div class="commitrow">` +
+    `<select id="mail-account" class="mailaccount" aria-label="Gmail account" ${gmail.connecting ? 'disabled' : ''}>` +
+    gmail.status.accounts
+      .map(
+        (a) =>
+          `<option value="${esc(a)}"${a === gmail.account ? ' selected' : ''}>${esc(a)}</option>`,
+      )
+      .join('') +
+    `</select>` +
+    `<button class="btn ghost mini" data-mail-add ${gmail.connecting ? 'disabled' : ''}>` +
+    `${gmail.connecting ? 'Waiting…' : 'Add account'}</button>` +
+    `</div>`;
+
   return (
     head('Gmail', inbox ? `${inbox.unread} unread · ${esc(inbox.email)}` : 'reading…') +
     (gmail.error ? `<div class="hintline bad">${esc(gmail.error)}</div>` : '') +
     (gmail.notice ? `<div class="hintline">${esc(gmail.notice)}</div>` : '') +
+    picker +
     mailPendingCard() +
     mailComposerCard() +
     `<div class="scroll mailscroll">${messages}</div>` +
@@ -864,6 +975,12 @@ function gmailMount(root: HTMLElement) {
   });
   root.querySelector<HTMLButtonElement>('[data-mail-refresh]')?.addEventListener('click', () => {
     void loadGmail(true);
+  });
+  root.querySelector<HTMLSelectElement>('#mail-account')?.addEventListener('change', (event) => {
+    void selectAccount((event.target as HTMLSelectElement).value);
+  });
+  root.querySelector<HTMLButtonElement>('[data-mail-add]')?.addEventListener('click', () => {
+    void connectGmail();
   });
   root.querySelector<HTMLButtonElement>('[data-mail-disconnect]')?.addEventListener('click', () => {
     void disconnectGmail();
@@ -932,6 +1049,40 @@ export const gmailView: View = {
   subtitle: mailSubtitle,
   render: gmailHtml,
   mount: gmailMount,
+};
+
+// ---------------------------------------------------------------------------
+// WhatsApp
+// ---------------------------------------------------------------------------
+
+/**
+ * WhatsApp refuses to be framed, so there is no page to put in the panel. What
+ * the tab holds instead is the way in: a window pointed at WhatsApp Web, kept
+ * alive by the app rather than by a browser tab.
+ */
+export const whatsappView: View = {
+  id: 'wa',
+  label: 'WhatsApp',
+  hue: 'var(--c-wa)',
+  glyph: GLYPH.wa,
+  subtitle: () => 'own window',
+
+  render: () =>
+    head('WhatsApp', 'own window') +
+    emptyState(
+      'WhatsApp opens in a window of its own',
+      'WhatsApp refuses to be drawn inside another page, so it cannot live in this panel.',
+      'The login survives restarts. Chats stay in that window — Ryfe does not read them.',
+    ) +
+    `<div class="commitrow"><button class="btn" data-wa-open>Open WhatsApp</button></div>`,
+
+  mount(root) {
+    root
+      .querySelector<HTMLButtonElement>('[data-wa-open]')
+      ?.addEventListener('click', () => {
+        void whatsappOpen();
+      });
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1005,8 +1156,8 @@ function proposalCard(p: Proposal, i: number): string {
 }
 
 export const chatView: View = {
-  id: 'ryfe',
-  label: 'Ryfe',
+  id: 'ai',
+  label: 'AI',
   // The accent's own value, not `var(--acc)`: the shell writes the hue into
   // `--acc` on the panel, so that would be a cycle and every button in here
   // would come out with no background at all.
@@ -1056,7 +1207,7 @@ export const chatView: View = {
         );
 
     return (
-      head('Ryfe', esc(chat.models[0] ?? 'deepseek')) +
+      head('AI', esc(chat.models[0] ?? 'deepseek')) +
       `<div class="scroll" id="chatlog">${body}</div>` +
       `<div class="commitrow">` +
       `<input type="text" id="chatin" autocomplete="off" ` +
@@ -1149,7 +1300,14 @@ export const settingsView: View = {
   },
 };
 
-export const VIEWS: View[] = [gitView, githubView, calendarView, gmailView, chatView];
+export const VIEWS: View[] = [
+  gitView,
+  githubView,
+  nowView,
+  gmailView,
+  whatsappView,
+  chatView,
+];
 
 /** Everything the shell can show, including the views with no tile. */
 export const ALL_VIEWS: View[] = [...VIEWS, settingsView];

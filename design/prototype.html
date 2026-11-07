@@ -497,8 +497,8 @@ function drawGyro(x, cx, cy, R, t, look, blink, busy){
   eyes(x, cx, cy - R*0.01, R*0.125, look, blink, '#0B2E2A', true, 1.55);
 }
 
-/* ---------- PULSAR — core with two sweeping beams ---------- */
-function drawPulsar(x, cx, cy, R, t, look, blink, busy){
+/* ---------- RYFE — core with two sweeping beams ---------- */
+function drawRyfe(x, cx, cy, R, t, look, blink, busy){
   const sp = busy ? 3.4 : 1;
   const ang = t * 0.55 * sp;
 
@@ -696,7 +696,7 @@ function drawVoid(x, cx, cy, R, t, look, blink, busy){
 const CREATURES = {
   orbit:  { label:'Orbit',   accA:'#6D3BE0', accB:'#A78BFA', desc:'A ringed planet with a moon. The one you liked — unchanged, so it stays a fair comparison.', work:'moon speeds up',            traits:['ringed','calm','orbits'],    draw: drawOrbit },
   gyro:   { label:'Gyro',    accA:'#0D9488', accB:'#5EEAD4', desc:'A glass sphere held inside two crossed rings. Reads as precision rather than wonder.',        work:'rings spin fast',           traits:['machine','precise','rings'], draw: drawGyro },
-  pulsar: { label:'Pulsar',  accA:'#1D74C9', accB:'#7DD3FC', desc:'A hot core throwing two beams like a lighthouse. The most obviously alive of the seven.',     work:'sweep accelerates',         traits:['beacon','sweeps','bright'],  draw: drawPulsar },
+  ryfe:   { label:'Ryfe',    accA:'#1D74C9', accB:'#7DD3FC', desc:'A hot core throwing two beams like a lighthouse. The most obviously alive of the seven.',     work:'sweep accelerates',         traits:['beacon','sweeps','bright'],  draw: drawRyfe },
   eclipse:{ label:'Eclipse', accA:'#A16207', accB:'#FCD34D', desc:'A dark sphere with a crescent that waxes and wanes. Its phase is its mood — full when busy.', work:'holds full',               traits:['phase','dark','waxes'],      draw: drawEclipse },
   terra:  { label:'Terra',   accA:'#0F8A5F', accB:'#34D399', desc:'A wireframe globe with no ring at all. Pure geometry — the quietest thing here.',             work:'spins faster',              traits:['grid','clean','spins'],      draw: drawTerra },
   mote:   { label:'Mote',    accA:'#8F6236', accB:'#E0B080', desc:'A small cratered rock turning over, with one moon. Rougher and less polished than the rest.', work:'moon speeds up',            traits:['rough','tumbles','rock'],    draw: drawMote },
@@ -820,17 +820,17 @@ const G = {
   more: '<circle cx="4.4" cy="10" r="1.3"/><circle cx="10" cy="10" r="1.3"/><circle cx="15.6" cy="10" r="1.3"/>',
 };
 const HUES = { git:'var(--c-git)', gh:'var(--c-gh)', cal:'var(--c-cal)', more:'var(--fg-3)' };
-const TILES = ['git', 'gh', 'cal', 'ryfe'];
+const TILES = ['git', 'gh', 'cal', 'ai'];
 
 const tilesEl = $('#tiles');
 let active = 'git';
 for (const k of TILES){
   const b = document.createElement('button');
   b.className = 'tile'; b.type = 'button'; b.dataset.k = k;
-  b.style.color = k === 'ryfe' ? 'var(--acc)' : HUES[k];
+  b.style.color = k === 'ai' ? 'var(--acc)' : HUES[k];
   b.setAttribute('aria-label', k);
   b.setAttribute('aria-pressed', String(k === active));
-  b.innerHTML = k === 'ryfe'
+  b.innerHTML = k === 'ai'
     ? '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="3.2"/><ellipse cx="10" cy="10" rx="8.2" ry="2.6" transform="rotate(-22 10 10)"/></svg>'
     : '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + G[k] + '</svg>';
   b.addEventListener('click', e => { e.stopPropagation(); active = k; open(true); render(); });
@@ -860,7 +860,7 @@ const PANELS = {
   gh: () => head('GitHub', '@elezen-ryfe · 3 open') +
     row('', 'ryfe #42 — Add the git panel', 'CI passing · 2 approvals', 'ready', 'good') +
     row('', 'jobtailor #17 — Fix parser', 'CI running · 4m 12s', 'running', 'hot') +
-    row('', 'coucou #8 — Bump deps', 'Review requested from you', 'review', 'hot') +
+    row('', 'jobtailor #8 — Bump deps', 'Review requested from you', 'review', 'hot') +
     '<div class="hintline">Polled every 5 min, every 60s while a check is running.</div>',
 
   cal: () => head('Calendar', 'Thu 10 Oct · 3 events') +
@@ -869,10 +869,10 @@ const PANELS = {
     row('16:30', 'Review — v2 ship', 'With Dana · Meet', '') +
     '<div class="hintline">Try: "move my 2pm to 4" · "what does my week look like"</div>',
 
-  ryfe: () => head('Ryfe', 'deepseek-flash · thinking off') +
+  ai: () => head('AI', 'deepseek-flash · thinking off') +
     '<div class="chat">' +
-      '<span class="bub me">what changed in coucou today?</span>' +
-      '<span class="tool"><span class="dot"></span>git_status · elezen_ryfe-github/coucou · 4 files</span>' +
+      '<span class="bub me">what changed in jobtailor today?</span>' +
+      '<span class="tool"><span class="dot"></span>git_status · elezen_ryfe-github/jobtailor · 4 files</span>' +
       '<span class="bub bot">Four files changed. The README gained a Windows build note, and windows/src/style.css picked up 38 lines of pill styling. Nothing committed yet.</span>' +
       '<span class="bub me">commit it</span>' +
       '<span class="tool"><span class="dot"></span>waiting for you — proposal ready</span>' +
@@ -920,13 +920,13 @@ function wireCommit(){
 /* ============================================================
    Capability cards
    ============================================================ */
-const RYFE_GLYPH = '<circle cx="10" cy="10" r="3.2"/><ellipse cx="10" cy="10" rx="8.2" ry="2.6" transform="rotate(-22 10 10)"/>';
+const AI_GLYPH = '<circle cx="10" cy="10" r="3.2"/><ellipse cx="10" cy="10" rx="8.2" ry="2.6" transform="rotate(-22 10 10)"/>';
 function svgFor(k){
   return '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
-    (k === 'ryfe' ? RYFE_GLYPH : G[k]) + '</svg>';
+    (k === 'ai' ? AI_GLYPH : G[k]) + '</svg>';
 }
 function cap(k, title, items, wide){
-  const hue = k === 'ryfe' ? 'var(--acc)' : HUES[k];
+  const hue = k === 'ai' ? 'var(--acc)' : HUES[k];
   const tint = 'color-mix(in oklab, ' + hue + ' 18%, transparent)';
   return '<div class="capcard' + (wide ? ' wide' : '') + '">' +
     '<div class="caphead"><span class="disc" style="background:' + tint + ';color:' + hue + '">' + svgFor(k) + '</span>' +
@@ -952,7 +952,7 @@ $('#caps').innerHTML = [
     '"Move my 2pm to 4", "find me an hour with Dana this week".',
     'Flags a double-booking before it happens. Reads your week on Monday.',
   ]),
-  cap('ryfe', 'DeepSeek, with hands', [
+  cap('ai', 'DeepSeek, with hands', [
     'Reads your repos, PRs and calendar through tools rather than guessing from a prompt.',
     'Anything that writes — a commit, a push, a new event — arrives as a card you click, not an action.',
     'Model list read from the API at startup, so a retired model name can never break the app.',

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "tauri": "tauri",
-    "icon": "node scripts/gen-icon.mjs && tauri icon assets/icon-source.png"
+    "icon": "tauri icon assets/icon-source.svg"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

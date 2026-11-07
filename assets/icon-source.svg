@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Ryfe's icon: the moth from src/pet/ryfe.ts on the island's dark plate.
+       Geometry is in units of R (the moth's body radius), scaled 370px. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#231a34"/>
+      <stop offset="1" stop-color="#191226"/>
+    </linearGradient>
+    <radialGradient id="bloom">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity=".26"/>
+      <stop offset=".65" stop-color="#60a5fa" stop-opacity=".07"/>
+      <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="paper" gradientUnits="userSpaceOnUse" x1="-.2" y1="-.7" x2=".9" y2=".8">
+      <stop offset="0" stop-color="#f2efe6"/>
+      <stop offset="1" stop-color="#d4d0c6"/>
+    </linearGradient>
+    <radialGradient id="lamp">
+      <stop offset="0" stop-color="#9cc8ff" stop-opacity=".6"/>
+      <stop offset="1" stop-color="#9cc8ff" stop-opacity="0"/>
+    </radialGradient>
+
+    <g id="wing">
+      <path d="M.08 -.28C.45 -.78 1 -.72 1.1 -.26C1.18 .08 .72 .3 .18 .2Z"
+            fill="url(#paper)" stroke="#111820" stroke-width=".035" stroke-linejoin="round"/>
+      <path d="M.16 -.18L.92 -.36" stroke="#111820" stroke-opacity=".3" stroke-width=".014" stroke-linecap="round"/>
+      <circle cx=".74" cy="-.32" r=".13" fill="#6aa9e0" fill-opacity=".8"/>
+      <circle cx=".74" cy="-.32" r=".049" fill="#f2efe6"/>
+
+      <path d="M.1 .18C.5 .32 .95 .55 .98 .84C.68 .98 .28 .76 .1 .48Z"
+            fill="url(#paper)" stroke="#111820" stroke-width=".035" stroke-linejoin="round"/>
+      <path d="M.16 .44L.8 .72" stroke="#111820" stroke-opacity=".3" stroke-width=".014" stroke-linecap="round"/>
+      <circle cx=".62" cy=".66" r=".08" fill="#6aa9e0" fill-opacity=".8"/>
+      <circle cx=".62" cy=".66" r=".03" fill="#f2efe6"/>
+    </g>
+  </defs>
+
+  <rect width="1024" height="1024" rx="215" fill="url(#bg)"/>
+  <rect width="1024" height="1024" rx="215" fill="url(#bloom)"/>
+
+  <g transform="translate(512 575) scale(370)">
+    <use href="#wing"/>
+    <use href="#wing" transform="scale(-1 1)"/>
+
+    <ellipse cx="0" cy=".12" rx=".26" ry=".55"
+             fill="url(#paper)" stroke="#111820" stroke-width=".035"/>
+    <circle cx="0" cy="-.55" r=".36"
+            fill="url(#paper)" stroke="#111820" stroke-width=".035"/>
+
+    <g stroke="#c9d2da" stroke-opacity=".9" stroke-width=".03" stroke-linecap="round" fill="none">
+      <path d="M-.12 -.82Q-.36 -1.16 -.55 -1.32"/>
+      <path d="M.12 -.82Q.36 -1.16 .55 -1.32"/>
+    </g>
+    <g fill="url(#lamp)">
+      <circle cx="-.55" cy="-1.32" r=".22"/>
+      <circle cx=".55" cy="-1.32" r=".22"/>
+    </g>
+    <g fill="#cfe5ff">
+      <circle cx="-.55" cy="-1.32" r=".07"/>
+      <circle cx=".55" cy="-1.32" r=".07"/>
+    </g>
+
+    <rect x="-.24" y="-.64" width=".16" height=".18" rx=".08" fill="#111820"/>
+    <rect x=".08" y="-.64" width=".16" height=".18" rx=".08" fill="#111820"/>
+  </g>
+</svg>

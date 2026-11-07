@@ -10,17 +10,35 @@ const SERVICE: &str = "ryfe";
 
 /// The complete set of keys Ryfe will ever store. Anything else is refused, so
 /// a bug (or a hostile page) cannot use this as a general-purpose credential
-/// reader for the rest of the machine.
+/// reader for the rest of the machine. Gmail adds one key per account; those
+/// are the only variable names allowed, and only with a plain address after
+/// the prefix.
 const ALLOWED: &[&str] = &[
     "deepseek-api-key",
     "github-token",
     "google-client-id",
     "google-client-secret",
-    "google-refresh-token",
+    "google-accounts",
 ];
 
+/// Whether Ryfe may keep a Gmail refresh token for this address.
+pub fn valid_gmail_account(email: &str) -> bool {
+    !email.is_empty()
+        && email.len() <= 254
+        && email
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '@' | '.' | '_' | '-' | '+'))
+}
+
+fn allowed(key: &str) -> bool {
+    ALLOWED.contains(&key)
+        || key
+            .strip_prefix("google-refresh-token:")
+            .is_some_and(valid_gmail_account)
+}
+
 fn entry(key: &str) -> Result<Entry, String> {
-    if !ALLOWED.contains(&key) {
+    if !allowed(key) {
         return Err(format!("'{key}' is not a key Ryfe stores"));
     }
     Entry::new(SERVICE, key).map_err(|e| format!("credential store unavailable: {e}"))
@@ -80,4 +98,22 @@ pub fn secret_clear(key: String) -> Result<(), String> {
 #[tauri::command]
 pub fn secret_status() -> Vec<(String, bool)> {
     ALLOWED.iter().map(|k| ((*k).to_string(), present(k))).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_plain_addresses_get_account_keys() {
+        assert!(allowed("google-refresh-token:someone@gmail.com"));
+        assert!(allowed("google-refresh-token:a+tag_b@sub.example.co.uk"));
+        assert!(!allowed("google-refresh-token:"));
+        assert!(!allowed("google-refresh-token:../../github-token"));
+        assert!(!allowed("google-refresh-token:a b@x.com"));
+        assert!(!allowed("google-refresh-token:a/b@x.com"));
+        assert!(!allowed("google-refresh-token:a@gmail.com\n"));
+        assert!(!allowed("google-refresh-token"));
+        assert!(!allowed("not-a-key"));
+    }
 }

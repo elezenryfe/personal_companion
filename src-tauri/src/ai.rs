@@ -55,7 +55,7 @@ static HISTORY: Mutex<Vec<Value>> = Mutex::new(Vec::new());
 /// The system prompt. Deliberately short: it describes what the tools are and
 /// what they are not, and leaves the rest to the tools' own descriptions.
 const SYSTEM: &str = "\
-You are Ryfe, a small assistant that lives at the top of the user's screen on Windows.
+You are the AI assistant in Ryfe, a small app that lives at the top of the user's screen on Windows.
 
 You can read the user's local git repositories, the files inside them, and their GitHub pull \
 requests through tools. Use them rather than guessing — if a question is about their code, look \

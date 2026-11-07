@@ -1,8 +1,9 @@
 //! Gmail — OAuth, the inbox, and the three edits Ryfe is allowed to make.
 //!
 //! Read, archive, mark read, and create a draft. Nothing here sends mail.
-//! The scope is `gmail.modify`, the narrowest one that covers those edits; the
-//! refresh token and the Desktop client's id/secret live in the credential store.
+//! The scope is `gmail.modify`, the narrowest one that covers those edits; one
+//! refresh token per connected account and the Desktop client's id/secret live
+//! in the credential store.
 
 use std::time::Duration;
 
@@ -28,6 +29,8 @@ const MAX_DRAFT: usize = 20_000;
 pub struct GmailStatus {
     pub configured: bool,
     pub connected: bool,
+    /// Every address Ryfe holds a refresh token for, in the order added.
+    pub accounts: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -75,6 +78,30 @@ fn creds() -> Result<(String, String), String> {
     let secret = secrets::get("google-client-secret")
         .ok_or_else(|| "Add your Desktop OAuth client secret in Settings → Google.".to_string())?;
     Ok((id, secret))
+}
+
+/// The connected addresses, in the order they were added.
+fn accounts() -> Vec<String> {
+    secrets::get("google-accounts")
+        .and_then(|raw| serde_json::from_str(&raw).ok())
+        .unwrap_or_default()
+}
+
+fn remember_account(email: &str) -> Result<(), String> {
+    let mut list = accounts();
+    if list.iter().any(|a| a == email) {
+        return Ok(());
+    }
+    list.push(email.to_string());
+    let raw = serde_json::to_string(&list).map_err(|e| format!("could not save accounts: {e}"))?;
+    secrets::set("google-accounts", &raw)
+}
+
+fn account_key(email: &str) -> Result<String, String> {
+    if !secrets::valid_gmail_account(email) {
+        return Err("That does not look like a connected Gmail account.".to_string());
+    }
+    Ok(format!("google-refresh-token:{email}"))
 }
 
 /// A Gmail id goes straight into a URL path; nothing else does.
@@ -125,10 +152,10 @@ async fn reply(mut socket: tokio::net::TcpStream, message: &str) {
 // OAuth
 // ---------------------------------------------------------------------------
 
-async fn access_token() -> Result<String, String> {
-    let refresh = secrets::get("google-refresh-token").ok_or_else(|| {
-        "Gmail is not connected yet. Add the Desktop client in Settings → Google, then connect from the Gmail tab."
-            .to_string()
+async fn access_token(account: &str) -> Result<String, String> {
+    let key = account_key(account)?;
+    let refresh = secrets::get(&key).ok_or_else(|| {
+        "That Gmail account is not connected. Connect it from the Gmail tab.".to_string()
     })?;
     let (id, secret) = creds()?;
 
@@ -229,10 +256,12 @@ async fn wait_for_code(listener: TcpListener, state: &str) -> Result<String, Str
 
 #[tauri::command]
 pub fn gmail_status() -> GmailStatus {
+    let accounts = accounts();
     GmailStatus {
         configured: secrets::present("google-client-id")
             && secrets::present("google-client-secret"),
-        connected: secrets::present("google-refresh-token"),
+        connected: !accounts.is_empty(),
+        accounts,
     }
 }
 
@@ -265,7 +294,7 @@ pub async fn gmail_connect() -> Result<String, String> {
         .append_pair("response_type", "code")
         .append_pair("scope", SCOPE)
         .append_pair("access_type", "offline")
-        .append_pair("prompt", "consent")
+        .append_pair("prompt", "consent select_account")
         .append_pair("state", &state)
         .append_pair("code_challenge", &challenge)
         .append_pair("code_challenge_method", "S256");
@@ -309,18 +338,25 @@ pub async fn gmail_connect() -> Result<String, String> {
         "Google did not return a refresh token. Remove Ryfe from your Google account's third-party access, then connect again."
             .to_string()
     })?;
-    secrets::set("google-refresh-token", &refresh)?;
 
     let profile = get_json(&client()?, "/profile", &tokens.access_token).await?;
-    Ok(profile["emailAddress"]
-        .as_str()
-        .unwrap_or("Gmail")
-        .to_string())
+    let email = profile["emailAddress"].as_str().unwrap_or("").to_string();
+    if !secrets::valid_gmail_account(&email) {
+        return Err("Google returned an account address Ryfe cannot store.".to_string());
+    }
+    secrets::set(&account_key(&email)?, &refresh)?;
+    remember_account(&email)?;
+    Ok(email)
 }
 
 #[tauri::command]
-pub fn gmail_disconnect() -> Result<(), String> {
-    secrets::clear("google-refresh-token")
+pub fn gmail_disconnect(account: String) -> Result<(), String> {
+    secrets::clear(&account_key(&account)?)?;
+    let mut list = accounts();
+    list.retain(|a| a != &account);
+    let raw =
+        serde_json::to_string(&list).map_err(|e| format!("could not save accounts: {e}"))?;
+    secrets::set("google-accounts", &raw)
 }
 
 // ---------------------------------------------------------------------------
@@ -394,8 +430,8 @@ async fn fetch_mail(client: &reqwest::Client, id: &str, token: &str) -> Result<M
 }
 
 #[tauri::command]
-pub async fn gmail_inbox() -> Result<Inbox, String> {
-    let token = access_token().await?;
+pub async fn gmail_inbox(account: String) -> Result<Inbox, String> {
+    let token = access_token(&account).await?;
     let client = client()?;
 
     let profile = get_json(&client, "/profile", &token).await?;
@@ -448,9 +484,9 @@ pub async fn gmail_inbox() -> Result<Inbox, String> {
     })
 }
 
-async fn modify(id: &str, remove: &[&str]) -> Result<(), String> {
+async fn modify(account: &str, id: &str, remove: &[&str]) -> Result<(), String> {
     let id = checked_id(id)?;
-    let token = access_token().await?;
+    let token = access_token(account).await?;
     let res = client()?
         .post(format!("{API}/messages/{id}/modify"))
         .bearer_auth(&token)
@@ -466,13 +502,13 @@ async fn modify(id: &str, remove: &[&str]) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn gmail_archive(id: String) -> Result<(), String> {
-    modify(&id, &["INBOX"]).await
+pub async fn gmail_archive(account: String, id: String) -> Result<(), String> {
+    modify(&account, &id, &["INBOX"]).await
 }
 
 #[tauri::command]
-pub async fn gmail_mark_read(id: String) -> Result<(), String> {
-    modify(&id, &["UNREAD"]).await
+pub async fn gmail_mark_read(account: String, id: String) -> Result<(), String> {
+    modify(&account, &id, &["UNREAD"]).await
 }
 
 fn head(s: &str) -> String {
@@ -511,7 +547,7 @@ fn wrap_76(s: &str) -> String {
 }
 
 #[tauri::command]
-pub async fn gmail_draft(id: String, body: String) -> Result<(), String> {
+pub async fn gmail_draft(account: String, id: String, body: String) -> Result<(), String> {
     let id = checked_id(&id)?;
     if body.trim().is_empty() {
         return Err("Write something first.".to_string());
@@ -520,7 +556,7 @@ pub async fn gmail_draft(id: String, body: String) -> Result<(), String> {
         return Err("That draft is too long.".to_string());
     }
 
-    let token = access_token().await?;
+    let token = access_token(&account).await?;
     let client = client()?;
     let meta = get_json(
         &client,

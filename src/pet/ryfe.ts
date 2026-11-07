@@ -1,11 +1,12 @@
 /**
- * Pulsar — two small creatures, drawn entirely in code.
+ * Ryfe — three small creatures, drawn entirely in code.
  *
  * The moth is the island's default: paper wings, an ink line, and antennae that
  * carry the state's light. The jelly is what the assistant tab shows: a pulsing
- * bell and four drifting arms. Both share the same movement — eyes follow the
- * cursor, the body breathes, alert bounces, listening tilts, and a greeting is a
- * quick flutter.
+ * bell and four drifting arms. The tube is what the Gmail tab shows: a small
+ * screen face with scanlines, an antenna light, and an LED. All three share the
+ * same movement — eyes follow the cursor, the body breathes, alert bounces,
+ * listening tilts, and a greeting is a quick flutter.
  *
  * Four states, each a whole mood rather than a colour swap:
  *   idle       pale lights, slow wing beats, breathing
@@ -17,7 +18,7 @@
 import { clamp, lerp, TAU } from '../core/anim';
 
 export type PetState = 'idle' | 'working' | 'alert' | 'listening';
-export type PetForm = 'moth' | 'jelly';
+export type PetForm = 'moth' | 'jelly' | 'tube';
 
 type Rgb = [number, number, number];
 type EyeShape = 'pill' | 'wide' | 'happy' | 'flat';
@@ -44,6 +45,8 @@ const PAPER_TOP: Rgb = [0.949, 0.937, 0.902];
 const PAPER_BOTTOM: Rgb = [0.831, 0.816, 0.776];
 const CHALK_TOP: Rgb = [0.937, 0.953, 0.965];
 const CHALK_BOTTOM: Rgb = [0.796, 0.827, 0.855];
+const SLATE_TOP: Rgb = [0.29, 0.32, 0.36];
+const SLATE_BOTTOM: Rgb = [0.13, 0.15, 0.17];
 
 const now = () => performance.now() / 1000;
 
@@ -192,7 +195,7 @@ export class PetEngine {
   private phase = 0;
   private t0 = now() - Math.random() * 4;
 
-  /** Which body to draw. The assistant tab uses the jelly. */
+  /** Which body to draw. The assistant tab uses the jelly, Gmail the tube. */
   setForm(form: PetForm) {
     this.form = form;
   }
@@ -289,6 +292,7 @@ export class PetEngine {
     if (this.tilt) ctx.rotate(this.tilt);
     ctx.scale(this.sx, this.sy);
     if (this.form === 'jelly') this.renderJelly(ctx, R);
+    else if (this.form === 'tube') this.renderTube(ctx, R);
     else this.renderMoth(ctx, R);
     ctx.restore();
 
@@ -487,6 +491,114 @@ export class PetEngine {
     );
 
     ctx.restore();
+  }
+
+  private renderTube(ctx: CanvasRenderingContext2D, R: number) {
+    const t = this.phase;
+    const g = this.greetK;
+
+    ctx.rotate(this.state === 'alert' ? Math.sin(t * 26) * 0.012 : 0);
+
+    // antenna
+    const tx = 0.06 * R;
+    const ty = -1.34 * R;
+    ctx.beginPath();
+    ctx.moveTo(0, -0.8 * R);
+    ctx.quadraticCurveTo(0.02 * R, -1.1 * R, tx, ty);
+    ctx.strokeStyle = 'rgba(201,210,218,0.9)';
+    ctx.lineWidth = Math.max(1, R * 0.032);
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    const pulse =
+      0.86 + 0.14 * Math.sin(t * (this.state === 'alert' ? 9 : this.state === 'working' ? 5 : 2.2));
+    const halo = ctx.createRadialGradient(tx, ty, 0, tx, ty, R * 0.22 * pulse);
+    halo.addColorStop(0, rgba(this.col, 0.5));
+    halo.addColorStop(1, rgba(this.col, 0));
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(tx, ty, R * 0.22 * pulse, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(tx, ty, R * 0.07 * pulse, 0, TAU);
+    ctx.fillStyle = rgba(this.col);
+    ctx.fill();
+
+    // bezel
+    roundedRect(ctx, -0.92 * R, -0.8 * R, 1.84 * R, 1.6 * R, 0.24 * R);
+    ctx.fillStyle = fillGrad(ctx, -0.6 * R, -0.8 * R, 0.6 * R, 0.8 * R, SLATE_TOP, SLATE_BOTTOM);
+    ctx.fill();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = Math.max(1, R * 0.045);
+    ctx.stroke();
+
+    // screen
+    const sw = 0.74 * R;
+    const sh = 0.6 * R;
+    roundedRect(ctx, -sw, -sh, sw * 2, sh * 2, 0.16 * R);
+    ctx.fillStyle = fillGrad(ctx, -sw, -sh, sw, sh, CHALK_TOP, CHALK_BOTTOM);
+    ctx.fill();
+
+    ctx.save();
+    roundedRect(ctx, -sw, -sh, sw * 2, sh * 2, 0.16 * R);
+    ctx.clip();
+
+    if (this.tint > 0.01) {
+      ctx.fillStyle = rgba(this.col, 0.34 * this.tint);
+      ctx.fillRect(-sw, -sh, sw * 2, sh * 2);
+    }
+    if (this.state === 'alert') {
+      ctx.fillStyle = `rgba(255,255,255,${0.05 + 0.05 * Math.sin(t * 18)})`;
+      ctx.fillRect(-sw, -sh, sw * 2, sh * 2);
+    }
+
+    // scanlines, drifting
+    const off = (t * 0.06) % (R * 0.09);
+    ctx.strokeStyle = 'rgba(17,24,32,0.09)';
+    ctx.lineWidth = 1;
+    for (let y = -sh + off; y < sh; y += R * 0.09) {
+      ctx.beginPath();
+      ctx.moveTo(-sw, y);
+      ctx.lineTo(sw, y);
+      ctx.stroke();
+    }
+
+    // working scan bar
+    if (this.state === 'working') {
+      const by = -sh + ((t * 0.55) % 1) * sh * 2;
+      ctx.fillStyle = rgba(this.col, 0.2);
+      ctx.fillRect(-sw, by, sw * 2, R * 0.1);
+    }
+
+    if (g > 0 && g < 1) {
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = Math.max(1, R * 0.035);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(0, 0.18 * R, 0.16 * R, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    drawEyes(
+      ctx,
+      0,
+      -0.03 * R,
+      0.3 * R,
+      0.2 * R,
+      0.27 * R,
+      this.eyeShape(),
+      this.open,
+      this.lookX,
+      this.lookY,
+      INK,
+    );
+
+    // LED
+    ctx.beginPath();
+    ctx.arc(0.74 * R, 0.68 * R, 0.055 * R, 0, TAU);
+    ctx.fillStyle = rgba(this.col, 0.9);
+    ctx.fill();
   }
 
   private drawBadge(

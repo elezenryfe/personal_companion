@@ -9,7 +9,7 @@
    ============================================================ */
 
 :root {
-  /* Pulsar's accent. JS overwrites both if a different character is chosen. */
+  /* Ryfe's accent. JS overwrites both if a different character is chosen. */
   --acc-a: #1d74c9;
   --acc-b: #3b9eff;
   --acc: var(--acc-b);
@@ -31,8 +31,9 @@
 
   --c-git: #f5a524;
   --c-gh: #9398a1;
-  --c-cal: #22d3ee;
+  --c-now: #22d3ee;
   --c-mail: #e0796e;
+  --c-wa: #25d366;
 
   /* One family, the one the machine already uses for its own interface. */
   --font-ui: system-ui, 'Segoe UI Variable Text', 'Segoe UI', 'Segoe UI Emoji',
@@ -479,6 +480,8 @@ html, body {
 }
 
 .commitrow { display: flex; gap: 8px; align-items: center; flex: none; }
+
+.mailaccount { flex: 1; min-width: 0; }
 
 input[type='text'],
 input[type='password'] {

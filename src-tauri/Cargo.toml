@@ -33,6 +33,7 @@ keyring = { version = "3", features = ["windows-native"] }
 # through Tauri's own window API, which keeps this file small and portable.
 windows = { version = "0.61", features = [
   "Win32_Foundation",
+  "Win32_UI_Shell",
   "Win32_UI_WindowsAndMessaging",
 ] }
 

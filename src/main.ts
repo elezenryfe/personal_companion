@@ -29,7 +29,7 @@ import {
   setVisible,
 } from './island/host';
 import { settingsView, VIEWS, svg, type View } from './island/views';
-import { PetEngine, type PetState } from './pet/pulsar';
+import { PetEngine, type PetState } from './pet/ryfe';
 
 const $ = <T extends HTMLElement>(sel: string) =>
   document.querySelector<T>(sel)!;
@@ -317,7 +317,7 @@ function renderTiles() {
  */
 function setActive(v: View, expand = true) {
   active = v;
-  pet.setForm(v.id === 'ryfe' ? 'jelly' : 'moth');
+  pet.setForm(v.id === 'ai' ? 'jelly' : v.id === 'gmail' ? 'tube' : 'moth');
   renderTiles();
   subEl.textContent = v.subtitle();
 
@@ -342,9 +342,11 @@ async function loadFor(v: View) {
     await loadRepos();
   } else if (v.id === 'gh') {
     await Promise.all([loadPulse(), loadActivity()]);
+  } else if (v.id === 'now') {
+    await Promise.all([loadPulse(), loadGmail(), loadRepos()]);
   } else if (v.id === 'gmail') {
     await loadGmail();
-  } else if (v.id === 'ryfe') {
+  } else if (v.id === 'ai') {
     await wireChat();
     await loadModels();
   }

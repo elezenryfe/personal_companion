@@ -100,7 +100,6 @@ function render() {
     `</select>` +
     `<button class="btn ghost" data-save-position>Move</button>` +
     `</div>` +
-    `<span class="setnote">Coucou occupies the whole top-centre of this screen and swallows clicks aimed at anything under it, which is why Right is the default. Anything else that parks itself at the top will do the same.</span>` +
     `<div class="setstatus" id="position-status"></div>` +
     `</div>` +
     `<div class="setstatus" id="general-status"></div>` +
@@ -151,7 +150,7 @@ function render() {
 
     `<div class="set">` +
     `<h3>Google</h3>` +
-    `<span class="setnote">Gmail and Calendar use a <strong>Desktop app</strong> OAuth client on your own Google Cloud project. Enable the Gmail API, create the client, and paste it here. The client already in your .env is a <strong>Web</strong> one and cannot use the loopback redirect this needs.</span>` +
+    `<span class="setnote">Gmail uses a <strong>Desktop app</strong> OAuth client on your own Google Cloud project. Enable the Gmail API, create the client, and paste it here. The client already in your .env is a <strong>Web</strong> one and cannot use the loopback redirect this needs.</span>` +
     field('google-client-id', 'Desktop OAuth client ID', 'Google Cloud Console → APIs & Services → Credentials → Create credentials → OAuth client ID → Desktop app.', 'text') +
     field('google-client-secret', 'Client secret', 'Stored in Windows Credential Manager and used only in the local token exchange.', 'password') +
     `<span class="setnote">Publish the OAuth consent screen to <strong>In production</strong> without submitting it for verification — staying in Testing makes Google expire your login every seven days. Do not upload a logo, which puts you in the review queue.</span>` +

@@ -101,6 +101,9 @@ export const secretStatus = () =>
  */
 export const openExternal = (url: string) => invoke<void>('open_url', { url });
 
+/** WhatsApp Web, in a window of its own — it refuses to be framed. */
+export const whatsappOpen = () => invoke<void>('whatsapp_open');
+
 /** The cursor position Rust forwards while the island is visible, in island coordinates. */
 export interface CursorEvent {
   0: number;

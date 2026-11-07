@@ -35,10 +35,7 @@ pub struct Settings {
     /// Which character is animating in the island.
     pub pet: String,
     /// Where the island sits along the top edge: "left", "center" or "right".
-    ///
-    /// Defaults to "right" because Coucou — the app this one learned from —
-    /// occupies the entire top-centre and swallows clicks aimed at anything
-    /// underneath it. Two always-on-top overlays cannot share that spot.
+    /// Defaults to "right".
     pub island_position: String,
 }
 
@@ -52,7 +49,7 @@ impl Default for Settings {
             open_on_hover: false,
             autostart: false,
             sound: true,
-            pet: "pulsar".to_string(),
+            pet: "ryfe".to_string(),
             island_position: "right".to_string(),
         }
     }
