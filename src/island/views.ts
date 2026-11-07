@@ -7,7 +7,7 @@
  * a new module.
  */
 
-import { openExternal, setFocusable } from '../core/bridge';
+import { openExternal } from '../core/bridge';
 import {
   approveProposal,
   chat,
@@ -870,11 +870,9 @@ export const chatView: View = {
     const send = root.querySelector<HTMLButtonElement>('#chatsend');
     if (!input || !send) return;
 
-    // Focus is the only thing that lets the island hold the keyboard, and it is
-    // handed straight back when the field loses it.
-    input.addEventListener('focus', () => void setFocusable(true));
-    input.addEventListener('blur', () => void setFocusable(false));
-
+    // Focus is the only thing that lets the island hold the keyboard. It is
+    // asked for and handed back by the shell's delegated listeners, which are
+    // the ones that know the user asked — see `main.ts`.
     const submit = () => {
       const text = input.value;
       input.value = '';

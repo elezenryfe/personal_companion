@@ -8,7 +8,8 @@ license = "MIT"
 
 [lib]
 name = "ryfe_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+# Windows-only; mobile builds need "staticlib" and "cdylib" back.
+crate-type = ["rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -38,3 +39,10 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
+
+# Most of target/debug was dependency debug info.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false

@@ -443,11 +443,42 @@ const typing = (el: EventTarget | null) =>
  * field deliberately asks for it. Without this the click focuses the field in
  * the page and the keystrokes go to whatever is behind the island.
  *
+ * Asking is the user's job. A click cannot activate a no-activate window, so
+ * the only thing allowed to take the keyboard from another application is a
+ * click on a field in here, or a field a click brought up a moment ago — the
+ * chat tile focusing its box, say. A re-render focuses brand new fields with
+ * nobody asking, and that must never reach for the keyboard: it is what used to
+ * pull it out of Chrome while the user was typing there.
+ *
  * Delegated rather than wired per view: every view renders its own inputs, and
  * a field added later must not have to remember to ask.
  */
+let clicked = -1e9;
+
+/**
+ * Whether the island is allowed to be holding the keyboard.
+ *
+ * Only two things grant it: the window already has it, or the user just asked
+ * for it with a click in here. Everything else that focuses a field — a view
+ * re-rendering, the panel rebuilt around the caret — has to leave the keyboard
+ * where it is, or the island pulls it out of whatever they moved to.
+ */
+const mayHoldKeyboard = () =>
+  document.hasFocus() || performance.now() - clicked < 500;
+
+document.addEventListener(
+  'pointerdown',
+  (e) => {
+    clicked = performance.now();
+    if (!wantsKeyboard(e.target)) return;
+    inputFocused = typing(e.target);
+    void setFocusable(true);
+  },
+  true,
+);
+
 document.addEventListener('focusin', (e) => {
-  if (!wantsKeyboard(e.target)) return;
+  if (!wantsKeyboard(e.target) || !mayHoldKeyboard()) return;
   inputFocused = typing(e.target);
   void setFocusable(true);
 });
@@ -458,8 +489,18 @@ document.addEventListener('focusout', () => {
   queueMicrotask(() => {
     const held = wantsKeyboard(document.activeElement);
     inputFocused = held && typing(document.activeElement);
-    void setFocusable(held);
+    void setFocusable(held && mayHoldKeyboard());
   });
+});
+
+// Leaving for another application — Alt+Tab, or a click on Chrome — moves no
+// DOM focus at all, so no focusout fires and the island would keep the keyboard
+// for good. This is the only thing that hands it back.
+addEventListener('blur', () => {
+  // No click here is still pending either: coming back in takes a new one.
+  clicked = -1e9;
+  inputFocused = false;
+  void setFocusable(false);
 });
 
 /**

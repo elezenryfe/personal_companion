@@ -1,0 +1,1048 @@
+<title>Pulsar Avatar Studies</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Layout: one specimen sheet — five live cells across, compact twins beneath each. */
+  :root {
+    color-scheme: dark;
+    --bg: #07080b;
+    --surface: #0b0d11;
+    --surface-2: #101318;
+    --line: rgba(255, 255, 255, 0.09);
+    --line-soft: rgba(255, 255, 255, 0.05);
+    --fg: #eef1f5;
+    --fg-2: #9aa3af;
+    --fg-3: #68717d;
+    --accent: #3b9eff;
+    --accent-dim: rgba(59, 158, 255, 0.14);
+    --font-display: 'IBM Plex Sans', system-ui, 'Segoe UI', sans-serif;
+    --font-body: 'IBM Plex Sans', system-ui, 'Segoe UI', sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 0;
+    background:
+      radial-gradient(620px 220px at 50% -90px, rgba(59, 158, 255, 0.09), transparent 70%),
+      var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet { max-width: 1120px; margin-inline: auto; }
+
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-block: 34px 20px;
+  }
+  .titleline {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  h1 {
+    margin: 0;
+    font: 600 clamp(22px, 2.4vw, 28px) / 1.15 var(--font-display);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .count { font: 400 12px / 1 var(--font-mono); color: var(--fg-3); }
+  .lede {
+    margin: 0;
+    max-width: 66ch;
+    font: 400 14px / 1.55 var(--font-body);
+    color: var(--fg-2);
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-block: 14px;
+    border-top: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line);
+  }
+  .seg {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    background: var(--surface);
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+  }
+  .seg button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--fg-2);
+    font: 500 12px / 1 var(--font-mono);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .seg button:hover { color: var(--fg); }
+  .seg button[aria-pressed='true'] {
+    background: var(--accent-dim);
+    color: var(--fg);
+    box-shadow: inset 0 0 0 1px rgba(59, 158, 255, 0.35);
+  }
+  button.ghost {
+    appearance: none;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--fg-2);
+    font: 500 12px / 1 var(--font-mono);
+    padding: 9px 13px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  button.ghost:hover { color: var(--fg); border-color: rgba(255, 255, 255, 0.2); }
+  button:focus-visible, .cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .picked {
+    margin-left: auto;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font: 400 12px / 1 var(--font-mono);
+    color: var(--fg-3);
+  }
+  .picked strong { color: var(--fg); font-weight: 500; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--line-soft);
+    border-bottom: 1px solid var(--line);
+  }
+  .cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    padding: 18px 14px 16px;
+    background: var(--bg);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .cell:hover { background: var(--surface); }
+  .cell[aria-pressed='true'] {
+    background: var(--surface-2);
+    box-shadow: inset 0 2px 0 var(--accent);
+  }
+  .cell-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .cell h2 { margin: 0; font: 600 15px / 1.2 var(--font-display); letter-spacing: -0.01em; }
+  .picked-tag { font: 500 10px / 1 var(--font-mono); color: var(--accent); visibility: hidden; }
+  .cell[aria-pressed='true'] .picked-tag { visibility: visible; }
+  .blurb {
+    margin: 0;
+    min-height: 3.6em;
+    font: 400 12.5px / 1.45 var(--font-body);
+    color: var(--fg-2);
+  }
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: auto;
+  }
+  .big { display: block; width: min(100%, 168px); aspect-ratio: 1; }
+  .compact { display: flex; align-items: center; gap: 8px; color: var(--fg-3); font: 400 10px / 1 var(--font-mono); }
+  .small { display: block; width: 47px; height: 47px; }
+
+  footer { padding-block: 18px 28px; font: 400 12px / 1.5 var(--font-mono); color: var(--fg-3); }
+
+  @media (max-width: 1000px) {
+    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .blurb { min-height: 0; }
+  }
+  @media (max-width: 460px) {
+    .grid { grid-template-columns: 1fr; }
+    .picked { margin-left: 0; width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<main class="sheet">
+  <header class="masthead">
+    <div class="titleline">
+      <h1>Pulsar avatar studies</h1>
+      <span class="count">five directions</span>
+    </div>
+    <p class="lede">
+      Each character is drawn in canvas and uses the island's movement: it follows
+      the cursor, blinks and breathes, bounces when alert, and tilts when listening.
+      The small preview under each one is the real 28 px header size.
+    </p>
+  </header>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Preview state">
+      <button data-state="idle" aria-pressed="true">Idle</button>
+      <button data-state="working" aria-pressed="false">Working</button>
+      <button data-state="alert" aria-pressed="false">Alert</button>
+      <button data-state="listening" aria-pressed="false">Listening</button>
+    </div>
+    <button class="ghost" id="greet">Greet</button>
+    <div class="picked"><span>Selected</span><strong id="picked-name">none yet</strong></div>
+  </div>
+
+  <section class="grid" id="grid" aria-label="Avatar directions"></section>
+
+  <footer>Click a direction to select it. The state buttons change all five at once.</footer>
+</main>
+
+<script>
+  const TAU = Math.PI * 2;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const rgba = (c, a = 1) =>
+    `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
+  const mix = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+
+  const INK = '#111820';
+  const INK_SOFT = 'rgba(17,24,32,0.55)';
+  const PAPER = { top: [0.949, 0.937, 0.902], bottom: [0.831, 0.816, 0.776] };
+  const CHALK = { top: [0.937, 0.953, 0.965], bottom: [0.796, 0.827, 0.855] };
+  const SLATE = { top: [0.29, 0.32, 0.36], bottom: [0.13, 0.15, 0.17] };
+
+  const STATES = {
+    idle: { color: [0.902, 0.914, 0.933], tint: 0, eye: 'pill', badge: null, bounces: false, tilt: 0 },
+    working: { color: [0.231, 0.62, 1], tint: 0.7, eye: 'pill', badge: 'dots', bounces: false, tilt: 0 },
+    alert: { color: [0.961, 0.647, 0.141], tint: 0.78, eye: 'wide', badge: 'bang', bounces: true, tilt: 0 },
+    listening: { color: [0.133, 0.827, 0.933], tint: 0.72, eye: 'pill', badge: null, bounces: false, tilt: 0.15 },
+  };
+
+  function roundedRect(ctx, x, y, w, h, r) {
+    const rr = clamp(r, 0, Math.min(w / 2, h / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function fillGrad(ctx, x0, y0, x1, y1, top, bottom) {
+    const g = ctx.createLinearGradient(x0, y0, x1, y1);
+    g.addColorStop(0, rgba(top));
+    g.addColorStop(1, rgba(bottom));
+    return g;
+  }
+
+  function drawEyeShape(ctx, w, h, shape, open) {
+    switch (shape) {
+      case 'wide':
+        drawEyeShape(ctx, w * 1.14, h * 1.1, 'pill', open);
+        break;
+      case 'pill': {
+        const hh = Math.max(h * open, w * 0.3);
+        roundedRect(ctx, -w / 2, -hh / 2, w, hh, Math.min(w / 2, hh / 2));
+        ctx.fill();
+        break;
+      }
+      case 'happy':
+        ctx.lineWidth = w * 0.42;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(0, h * 0.15, w * 0.7, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.stroke();
+        break;
+      case 'flat':
+        roundedRect(ctx, -w * 0.7, -w * 0.18, w * 1.4, w * 0.36, w * 0.18);
+        ctx.fill();
+        break;
+    }
+  }
+
+  function drawEyes(ctx, cx, cy, gap, w, h, shape, open, lookX, lookY, color) {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    for (const sd of [-1, 1]) {
+      ctx.save();
+      ctx.translate(cx + sd * gap + lookX * gap * 0.45, cy - lookY * h * 0.65);
+      drawEyeShape(ctx, w, h, shape, open);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  class Pet {
+    constructor() {
+      this.state = 'idle';
+      this.spec = STATES.idle;
+      this.col = [...STATES.idle.color];
+      this.colT = [...STATES.idle.color];
+      this.tint = 0;
+      this.tintT = 0;
+      this.open = 1;
+      this.blinkStart = -10;
+      this.nextBlink = 1 + Math.random() * 2;
+      this.lookX = 0;
+      this.lookY = 0;
+      this.lookTX = 0;
+      this.lookTY = 0;
+      this.tilt = 0;
+      this.oy = 0;
+      this.badge = null;
+      this.badgeS = 1;
+      this.greetStart = -10;
+      this.t0 = performance.now() / 1000 - Math.random() * 4;
+      this.phase = 0;
+      this.sx = 1;
+      this.sy = 1;
+    }
+
+    now() { return performance.now() / 1000; }
+
+    get greetK() {
+      return clamp((this.now() - this.greetStart) / 1.7, 0, 1);
+    }
+
+    setState(next) {
+      if (next === this.state) return;
+      const prev = this.state;
+      this.state = next;
+      this.spec = STATES[next];
+      this.colT = [...this.spec.color];
+      this.tintT = this.spec.tint;
+      this.badge = this.spec.badge;
+      this.badgeS = 0;
+      if (next === 'alert') this.oy = -0.14;
+      if (prev !== 'idle' || next !== 'idle') this.blinkStart = this.now();
+    }
+
+    look(nx, ny) {
+      this.lookTX = Math.tanh(nx);
+      this.lookTY = -Math.tanh(ny);
+    }
+
+    greet() {
+      this.greetStart = this.now();
+      this.blinkStart = -10;
+    }
+
+    eyeShape() {
+      const g = this.greetK;
+      return g > 0 && g < 1 ? 'happy' : this.spec.eye;
+    }
+
+    update(dt) {
+      const t = this.now();
+      const pace = this.state === 'working' ? 1.7 : this.state === 'alert' ? 2.4 : this.state === 'listening' ? 0.8 : 1;
+      this.phase = t - this.t0;
+
+      if (t > this.nextBlink) {
+        this.blinkStart = t;
+        this.nextBlink = t + 2.2 + Math.random() * 3.2;
+        if (Math.random() < 0.22) this.nextBlink = t + 0.55;
+      }
+      const bp = (t - this.blinkStart) / 0.22;
+      this.open =
+        bp >= 0 && bp <= 1
+          ? bp < 0.35
+            ? lerp(1, 0.06, bp / 0.35)
+            : lerp(0.06, 1, (bp - 0.35) / 0.65)
+          : 1;
+
+      const kLook = 1 - Math.pow(0.0025, dt);
+      this.lookX += (this.lookTX - this.lookX) * kLook;
+      this.lookY += (this.lookTY - this.lookY) * kLook;
+
+      const g = this.greetK;
+      const greetTilt = g > 0 && g < 1 ? Math.sin(g * Math.PI) * 0.08 : 0;
+      const targetTilt = this.spec.tilt + greetTilt + this.lookX * 0.05;
+      this.tilt += (targetTilt - this.tilt) * (1 - Math.pow(0.004, dt));
+
+      this.col = mix(this.col, this.colT, 1 - Math.pow(0.002, dt));
+      this.tint += (this.tintT - this.tint) * (1 - Math.pow(0.004, dt));
+
+      const bounce = this.spec.bounces ? -Math.abs(Math.sin(this.phase * 5.2)) * 0.07 : 0;
+      const hop = g > 0 && g < 1 ? -Math.sin(g * Math.PI) * 0.09 : 0;
+      this.oy += (bounce + hop - this.oy) * (1 - Math.pow(0.0008, dt));
+
+      const breath = Math.sin(this.phase * 1.8 * pace) * 0.03;
+      this.sx = 1 - breath * 0.55;
+      this.sy = 1 + breath;
+
+      this.badgeS += (1 - this.badgeS) * (1 - Math.pow(0.002, dt));
+      if (this.badgeS > 0.99) this.badgeS = 1;
+    }
+
+    draw(ctx, w, h) {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      const R = w * 0.3;
+      const cx = w / 2;
+      const cy = h / 2 + this.oy * R + R * 0.06;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      if (this.tilt) ctx.rotate(this.tilt);
+      ctx.scale(this.sx, this.sy);
+      this.render(ctx, R);
+      ctx.restore();
+
+      if (this.badge) this.drawBadge(ctx, R, w / 2 - R * 0.95, cy - R * 0.95);
+    }
+
+    drawBadge(ctx, R, x, y) {
+      const t = this.now();
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(this.badgeS, this.badgeS);
+      const col = rgba(this.spec.color);
+      if (this.badge === 'dots') {
+        roundedRect(ctx, -R * 0.32, -R * 0.16, R * 0.64, R * 0.32, R * 0.16);
+        ctx.fillStyle = col;
+        ctx.fill();
+        for (let i = 0; i < 3; i++) {
+          const phase = (((t * 2.4 - i * 0.22) % 1) + 1) % 1;
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc((i - 1) * R * 0.16, 0, R * 0.05 * (1 + 0.4 * Math.max(0, Math.sin(phase * TAU))), 0, TAU);
+          ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(0, 0, R * 0.3, 0, TAU);
+        ctx.fill();
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.arc(0, 0, R * 0.22, 0, TAU);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = `900 ${R * 0.3}px system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('!', 0, R * 0.015);
+      }
+      ctx.restore();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Moth — paper wings, ink body, antennae carry the state light.
+  // -------------------------------------------------------------------------
+  function mothWingPath(R, upper) {
+    const p = new Path2D();
+    if (upper) {
+      p.moveTo(0.08 * R, -0.28 * R);
+      p.bezierCurveTo(0.45 * R, -0.78 * R, 1.0 * R, -0.72 * R, 1.1 * R, -0.26 * R);
+      p.bezierCurveTo(1.18 * R, 0.08 * R, 0.72 * R, 0.3 * R, 0.18 * R, 0.2 * R);
+    } else {
+      p.moveTo(0.1 * R, 0.18 * R);
+      p.bezierCurveTo(0.5 * R, 0.32 * R, 0.95 * R, 0.55 * R, 0.98 * R, 0.84 * R);
+      p.bezierCurveTo(0.68 * R, 0.98 * R, 0.28 * R, 0.76 * R, 0.1 * R, 0.48 * R);
+    }
+    p.closePath();
+    return p;
+  }
+
+  class Moth extends Pet {
+    render(ctx, R) {
+      const t = this.phase;
+      const speed = this.state === 'working' ? 2.4 : this.state === 'alert' ? 3.4 : 1.6;
+      const amp = this.state === 'alert' ? 0.3 : this.state === 'listening' ? 0.08 : 0.15;
+      const g = this.greetK;
+      const greetFlap = g > 0 && g < 1 ? Math.sin(t * 20) * 0.18 * Math.sin(g * Math.PI) : 0;
+      const flap = Math.sin(t * speed) * amp + greetFlap;
+
+      for (const sd of [-1, 1]) {
+        ctx.save();
+        ctx.scale(sd, 1);
+        ctx.rotate(flap);
+        for (const upper of [true, false]) {
+          const wing = mothWingPath(R, upper);
+          ctx.fillStyle = fillGrad(ctx, -0.2 * R, -0.7 * R, 0.9 * R, 0.8 * R, PAPER.top, PAPER.bottom);
+          ctx.fill(wing);
+          if (this.tint > 0.01) {
+            ctx.fillStyle = rgba(this.col, 0.32 * this.tint);
+            ctx.fill(wing);
+          }
+          ctx.strokeStyle = INK;
+          ctx.lineWidth = Math.max(1, R * 0.035);
+          ctx.stroke(wing);
+
+          ctx.strokeStyle = 'rgba(17,24,32,0.3)';
+          ctx.lineWidth = Math.max(1, R * 0.014);
+          ctx.beginPath();
+          ctx.moveTo(0.16 * R, upper ? -0.18 * R : 0.44 * R);
+          ctx.lineTo(upper ? 0.92 * R : 0.8 * R, upper ? -0.36 * R : 0.72 * R);
+          ctx.stroke();
+
+          const ex = upper ? 0.74 * R : 0.62 * R;
+          const ey = upper ? -0.32 * R : 0.66 * R;
+          const er = (upper ? 0.13 : 0.08) * R;
+          ctx.beginPath();
+          ctx.arc(ex, ey, er, 0, TAU);
+          ctx.fillStyle = rgba(this.col, 0.45 + 0.35 * this.tint);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(ex, ey, er * 0.38, 0, TAU);
+          ctx.fillStyle = rgba(PAPER.top);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // body
+      ctx.beginPath();
+      ctx.ellipse(0, 0.12 * R, 0.26 * R, 0.55 * R, 0, 0, TAU);
+      ctx.fillStyle = fillGrad(ctx, -0.3 * R, -0.4 * R, 0.3 * R, 0.7 * R, PAPER.top, PAPER.bottom);
+      ctx.fill();
+      if (this.tint > 0.01) {
+        ctx.fillStyle = rgba(this.col, 0.3 * this.tint);
+        ctx.fill();
+      }
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = Math.max(1, R * 0.035);
+      ctx.stroke();
+
+      // head
+      ctx.beginPath();
+      ctx.arc(0, -0.55 * R, 0.36 * R, 0, TAU);
+      ctx.fillStyle = fillGrad(ctx, -0.3 * R, -0.85 * R, 0.3 * R, -0.25 * R, PAPER.top, PAPER.bottom);
+      ctx.fill();
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = Math.max(1, R * 0.035);
+      ctx.stroke();
+
+      // antennae and their lights
+      for (const sd of [-1, 1]) {
+        const tx = sd * 0.55 * R;
+        const ty = -1.32 * R;
+        ctx.beginPath();
+        ctx.moveTo(sd * 0.12 * R, -0.82 * R);
+        ctx.quadraticCurveTo(sd * 0.36 * R, -1.16 * R, tx, ty);
+        ctx.strokeStyle = 'rgba(201,210,218,0.9)';
+        ctx.lineWidth = Math.max(1, R * 0.03);
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        const pulse = 0.86 + 0.14 * Math.sin(t * (this.state === 'alert' ? 9 : 2.2));
+        const halo = ctx.createRadialGradient(tx, ty, 0, tx, ty, R * 0.22 * pulse);
+        halo.addColorStop(0, rgba(this.col, 0.55));
+        halo.addColorStop(1, rgba(this.col, 0));
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.arc(tx, ty, R * 0.22 * pulse, 0, TAU);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(tx, ty, R * 0.07 * pulse, 0, TAU);
+        ctx.fillStyle = rgba(this.col);
+        ctx.fill();
+      }
+
+      drawEyes(ctx, 0, -0.55 * R, 0.16 * R, 0.16 * R, 0.18 * R, this.eyeShape(), this.open, this.lookX, this.lookY, INK);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Tube — a small screen face with a scan bar and an antenna light.
+  // -------------------------------------------------------------------------
+  class Tube extends Pet {
+    render(ctx, R) {
+      const t = this.phase;
+      const g = this.greetK;
+
+      ctx.rotate(this.state === 'alert' ? Math.sin(t * 26) * 0.012 : 0);
+
+      // antenna
+      const tx = 0.06 * R;
+      const ty = -1.34 * R;
+      ctx.beginPath();
+      ctx.moveTo(0, -0.8 * R);
+      ctx.quadraticCurveTo(0.02 * R, -1.1 * R, tx, ty);
+      ctx.strokeStyle = 'rgba(201,210,218,0.9)';
+      ctx.lineWidth = Math.max(1, R * 0.032);
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      const pulse = 0.86 + 0.14 * Math.sin(t * (this.state === 'alert' ? 9 : this.state === 'working' ? 5 : 2.2));
+      const halo = ctx.createRadialGradient(tx, ty, 0, tx, ty, R * 0.22 * pulse);
+      halo.addColorStop(0, rgba(this.col, 0.5));
+      halo.addColorStop(1, rgba(this.col, 0));
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(tx, ty, R * 0.22 * pulse, 0, TAU);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(tx, ty, R * 0.07 * pulse, 0, TAU);
+      ctx.fillStyle = rgba(this.col);
+      ctx.fill();
+
+      // bezel
+      roundedRect(ctx, -0.92 * R, -0.8 * R, 1.84 * R, 1.6 * R, 0.24 * R);
+      ctx.fillStyle = fillGrad(ctx, -0.6 * R, -0.8 * R, 0.6 * R, 0.8 * R, SLATE.top, SLATE.bottom);
+      ctx.fill();
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = Math.max(1, R * 0.045);
+      ctx.stroke();
+
+      // screen
+      const sw = 0.74 * R;
+      const sh = 0.6 * R;
+      roundedRect(ctx, -sw, -sh, sw * 2, sh * 2, 0.16 * R);
+      ctx.fillStyle = fillGrad(ctx, -sw, -sh, sw, sh, CHALK.top, CHALK.bottom);
+      ctx.fill();
+
+      ctx.save();
+      roundedRect(ctx, -sw, -sh, sw * 2, sh * 2, 0.16 * R);
+      ctx.clip();
+
+      if (this.tint > 0.01) {
+        ctx.fillStyle = rgba(this.col, 0.34 * this.tint);
+        ctx.fillRect(-sw, -sh, sw * 2, sh * 2);
+      }
+      if (this.state === 'alert') {
+        ctx.fillStyle = `rgba(255,255,255,${0.05 + 0.05 * Math.sin(t * 18)})`;
+        ctx.fillRect(-sw, -sh, sw * 2, sh * 2);
+      }
+
+      // scanlines, drifting
+      const off = (t * 0.06) % (R * 0.09);
+      ctx.strokeStyle = 'rgba(17,24,32,0.09)';
+      ctx.lineWidth = 1;
+      for (let y = -sh + off; y < sh; y += R * 0.09) {
+        ctx.beginPath();
+        ctx.moveTo(-sw, y);
+        ctx.lineTo(sw, y);
+        ctx.stroke();
+      }
+
+      // working scan bar
+      if (this.state === 'working') {
+        const by = -sh + ((t * 0.55) % 1) * sh * 2;
+        ctx.fillStyle = rgba(this.col, 0.2);
+        ctx.fillRect(-sw, by, sw * 2, R * 0.1);
+      }
+
+      if (g > 0 && g < 1) {
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = Math.max(1, R * 0.035);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(0, 0.18 * R, 0.16 * R, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      drawEyes(ctx, 0, -0.03 * R, 0.3 * R, 0.2 * R, 0.27 * R, this.eyeShape(), this.open, this.lookX, this.lookY, INK);
+
+      // LED
+      ctx.beginPath();
+      ctx.arc(0.74 * R, 0.68 * R, 0.055 * R, 0, TAU);
+      ctx.fillStyle = rgba(this.col, 0.9);
+      ctx.fill();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Jelly — a pulsing bell, four drifting arms.
+  // -------------------------------------------------------------------------
+  class Jelly extends Pet {
+    render(ctx, R) {
+      const t = this.phase;
+      const g = this.greetK;
+      const pace = this.state === 'working' ? 2.4 : this.state === 'alert' ? 3.2 : 1;
+      const beat = Math.sin(t * pace * 1.7) * 0.028 + (g > 0 && g < 1 ? Math.sin(g * Math.PI) * 0.05 : 0);
+      const alertSquash = this.state === 'alert' ? Math.sin(t * 6) * 0.02 : 0;
+
+      // glow
+      const glow = ctx.createRadialGradient(0, -0.15 * R, R * 0.1, 0, -0.15 * R, R * 1.15);
+      glow.addColorStop(0, rgba(this.col, 0.16 + 0.3 * this.tint));
+      glow.addColorStop(1, rgba(this.col, 0));
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(0, -0.15 * R, R * 1.15, 0, TAU);
+      ctx.fill();
+
+      ctx.save();
+      ctx.scale(1 + beat + alertSquash, 1 - beat * 0.8 - alertSquash);
+
+      // arms
+      for (let i = 0; i < 4; i++) {
+        const bx = (-0.36 + i * 0.24) * R;
+        const drift = Math.sin(t * 1.5 + i * 1.1) * R;
+        const splay = g > 0 && g < 1 ? Math.sin(g * Math.PI) * 0.25 * R : 0;
+        const len = (0.95 + (i % 2) * 0.18) * R;
+        const grad = ctx.createLinearGradient(0, 0.1 * R, 0, 0.1 * R + len);
+        grad.addColorStop(0, 'rgba(17,24,32,0.55)');
+        grad.addColorStop(1, rgba(this.col, 0.95));
+        ctx.beginPath();
+        ctx.moveTo(bx, 0.08 * R);
+        ctx.bezierCurveTo(
+          bx + drift * 0.1 + splay * (i - 1.5),
+          0.45 * R,
+          bx - drift * 0.1 - splay * (i - 1.5),
+          0.82 * R,
+          bx + drift * 0.06 + splay * (i - 1.5),
+          0.1 * R + len
+        );
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = Math.max(1.2, R * 0.045);
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+
+      // bell
+      const bell = new Path2D();
+      bell.moveTo(-0.82 * R, 0.08 * R);
+      bell.bezierCurveTo(-0.9 * R, -0.5 * R, -0.5 * R, -0.92 * R, 0, -0.92 * R);
+      bell.bezierCurveTo(0.5 * R, -0.92 * R, 0.9 * R, -0.5 * R, 0.82 * R, 0.08 * R);
+      bell.quadraticCurveTo(0.4 * R, 0.22 * R, 0, 0.12 * R);
+      bell.quadraticCurveTo(-0.4 * R, 0.22 * R, -0.82 * R, 0.08 * R);
+      bell.closePath();
+
+      ctx.fillStyle = fillGrad(ctx, -0.6 * R, -0.9 * R, 0.6 * R, 0.2 * R, CHALK.top, CHALK.bottom);
+      ctx.fill(bell);
+      if (this.tint > 0.01) {
+        ctx.fillStyle = rgba(this.col, 0.3 * this.tint);
+        ctx.fill(bell);
+      }
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = Math.max(1, R * 0.04);
+      ctx.stroke(bell);
+
+      ctx.save();
+      ctx.clip(bell);
+      const hl = ctx.createRadialGradient(-0.3 * R, -0.5 * R, 0, -0.3 * R, -0.5 * R, R * 0.55);
+      hl.addColorStop(0, 'rgba(255,255,255,0.5)');
+      hl.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = hl;
+      ctx.fillRect(-R, -R, 2 * R, 2 * R);
+      ctx.restore();
+
+      drawEyes(ctx, 0, -0.3 * R, 0.26 * R, 0.18 * R, 0.2 * R, this.eyeShape(), this.open, this.lookX, this.lookY, INK);
+
+      ctx.restore();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Comet — a bright core with a tail that trails its gaze.
+  // -------------------------------------------------------------------------
+  class Comet extends Pet {
+    render(ctx, R) {
+      const t = this.phase;
+      const g = this.greetK;
+      const mag = Math.hypot(this.lookX, this.lookY);
+      let ang = mag > 0.06 ? Math.atan2(-this.lookY, -this.lookX) : Math.PI * 0.72;
+      if (g > 0 && g < 1) ang += Math.sin(g * Math.PI) * 0.5;
+
+      const dx = Math.cos(ang);
+      const dy = Math.sin(ang);
+      const px = -dy;
+      const py = dx;
+      const flare = g > 0 && g < 1 ? Math.sin(g * Math.PI) : 0;
+
+      // glow
+      const glow = ctx.createRadialGradient(0, 0, R * 0.2, 0, 0, R * 1.1);
+      glow.addColorStop(0, rgba(this.col, 0.18 + 0.26 * this.tint + flare * 0.22));
+      glow.addColorStop(1, rgba(this.col, 0));
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 1.1, 0, TAU);
+      ctx.fill();
+
+      // tail
+      for (let i = 0; i < 3; i++) {
+        const len = R * (0.55 + i * 0.16 + flare * 0.12) + Math.sin(t * 2 + i) * R * 0.03;
+        const width = R * (0.2 - i * 0.05);
+        const bend = Math.sin(t * 1.7 + i * 1.3) * R * (0.16 - i * 0.03);
+        ctx.beginPath();
+        ctx.moveTo(dx * 0.4 * R, dy * 0.4 * R);
+        ctx.quadraticCurveTo(
+          dx * (0.4 * R + len * 0.55) + px * bend,
+          dy * (0.4 * R + len * 0.55) + py * bend,
+          dx * (0.4 * R + len),
+          dy * (0.4 * R + len)
+        );
+        ctx.strokeStyle = rgba(this.col, 0.2 + i * 0.1);
+        ctx.lineWidth = width;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+      for (let i = 0; i < 4; i++) {
+        const d = R * (0.5 + i * 0.17);
+        const wob = Math.sin(t * 2 + i * 1.7) * R * 0.05;
+        ctx.beginPath();
+        ctx.arc(dx * d + px * wob, dy * d + py * wob, R * (0.035 - i * 0.005), 0, TAU);
+        ctx.fillStyle = rgba(this.col, 0.35 - i * 0.06);
+        ctx.fill();
+      }
+
+      // core
+      const core = ctx.createRadialGradient(-0.15 * R, -0.18 * R, 0, 0, 0, 0.58 * R);
+      core.addColorStop(0, 'rgba(255,255,255,1)');
+      core.addColorStop(0.55, rgba(CHALK.top));
+      core.addColorStop(1, rgba(CHALK.bottom));
+      ctx.beginPath();
+      ctx.arc(0, 0, 0.55 * R, 0, TAU);
+      ctx.fillStyle = core;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(17,24,32,0.75)';
+      ctx.lineWidth = Math.max(1, R * 0.035);
+      ctx.stroke();
+
+      drawEyes(ctx, 0, -0.04 * R, 0.2 * R, 0.17 * R, 0.19 * R, this.eyeShape(), this.open, this.lookX, this.lookY, INK);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Crane — folded paper, angular wings, ink creases.
+  // -------------------------------------------------------------------------
+  class Crane extends Pet {
+    render(ctx, R) {
+      const t = this.phase;
+      const g = this.greetK;
+      const speed = this.state === 'working' ? 2.6 : this.state === 'alert' ? 3.6 : 1.5;
+      const amp = this.state === 'alert' ? 0.28 : this.state === 'listening' ? 0.07 : 0.14;
+      const spread = g > 0 && g < 1 ? Math.sin(g * Math.PI) * 0.22 : 0;
+      const flap = Math.sin(t * speed) * amp;
+
+      for (const sd of [-1, 1]) {
+        ctx.save();
+        ctx.scale(sd, 1);
+        ctx.rotate(flap - spread);
+        const wing = new Path2D();
+        wing.moveTo(0.08 * R, -0.02 * R);
+        wing.lineTo(0.96 * R, -0.52 * R);
+        wing.lineTo(0.78 * R, 0.36 * R);
+        wing.lineTo(0.16 * R, 0.3 * R);
+        wing.closePath();
+        ctx.fillStyle = fillGrad(ctx, 0, -0.5 * R, 0.8 * R, 0.3 * R, PAPER.top, PAPER.bottom);
+        ctx.fill(wing);
+        if (this.tint > 0.01) {
+          ctx.fillStyle = rgba(this.col, 0.3 * this.tint);
+          ctx.fill(wing);
+        }
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = Math.max(1, R * 0.035);
+        ctx.stroke(wing);
+        ctx.strokeStyle = 'rgba(17,24,32,0.35)';
+        ctx.lineWidth = Math.max(1, R * 0.015);
+        ctx.beginPath();
+        ctx.moveTo(0.16 * R, 0.02 * R);
+        ctx.lineTo(0.82 * R, -0.38 * R);
+        ctx.stroke();
+        ctx.strokeStyle = rgba(this.col, 0.75);
+        ctx.lineWidth = Math.max(1, R * 0.025);
+        ctx.beginPath();
+        ctx.moveTo(0.2 * R, 0.26 * R);
+        ctx.lineTo(0.74 * R, 0.3 * R);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // tail folds
+      const tail = new Path2D();
+      tail.moveTo(-0.2 * R, 0.7 * R);
+      tail.lineTo(0, 1.05 * R);
+      tail.lineTo(0.2 * R, 0.7 * R);
+      tail.closePath();
+      ctx.fillStyle = fillGrad(ctx, -0.2 * R, 0.7 * R, 0.2 * R, 1.05 * R, PAPER.top, PAPER.bottom);
+      ctx.fill(tail);
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = Math.max(1, R * 0.03);
+      ctx.stroke(tail);
+
+      // body
+      const body = new Path2D();
+      body.moveTo(0, -0.12 * R);
+      body.lineTo(0.34 * R, 0.48 * R);
+      body.lineTo(0, 0.86 * R);
+      body.lineTo(-0.34 * R, 0.48 * R);
+      body.closePath();
+      ctx.fillStyle = fillGrad(ctx, -0.3 * R, -0.1 * R, 0.3 * R, 0.8 * R, PAPER.top, PAPER.bottom);
+      ctx.fill(body);
+      if (this.tint > 0.01) {
+        ctx.fillStyle = rgba(this.col, 0.3 * this.tint);
+        ctx.fill(body);
+      }
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = Math.max(1, R * 0.04);
+      ctx.stroke(body);
+      ctx.strokeStyle = 'rgba(17,24,32,0.3)';
+      ctx.lineWidth = Math.max(1, R * 0.015);
+      ctx.beginPath();
+      ctx.moveTo(0, -0.06 * R);
+      ctx.lineTo(0, 0.82 * R);
+      ctx.moveTo(-0.28 * R, 0.46 * R);
+      ctx.lineTo(0.28 * R, 0.46 * R);
+      ctx.stroke();
+
+      // head
+      const head = new Path2D();
+      head.moveTo(0, -0.78 * R);
+      head.lineTo(0.34 * R, -0.2 * R);
+      head.lineTo(0, -0.06 * R);
+      head.lineTo(-0.34 * R, -0.2 * R);
+      head.closePath();
+      ctx.fillStyle = fillGrad(ctx, -0.2 * R, -0.7 * R, 0.2 * R, -0.1 * R, PAPER.top, PAPER.bottom);
+      ctx.fill(head);
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = Math.max(1, R * 0.035);
+      ctx.stroke(head);
+
+      // beak
+      const beak = new Path2D();
+      beak.moveTo(-0.1 * R, -0.2 * R);
+      beak.lineTo(0, -0.02 * R);
+      beak.lineTo(0.1 * R, -0.2 * R);
+      beak.closePath();
+      ctx.fillStyle = rgba(this.col, 0.85);
+      ctx.fill(beak);
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = Math.max(1, R * 0.025);
+      ctx.stroke(beak);
+
+      drawEyes(ctx, 0, -0.42 * R, 0.15 * R, 0.12 * R, 0.14 * R, this.eyeShape(), this.open, this.lookX, this.lookY, INK);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Page
+  // -------------------------------------------------------------------------
+  const OPTIONS = [
+    { name: 'Moth', blurb: 'Paper wings breathe; the antennae carry the state light.', make: () => new Moth() },
+    { name: 'Tube', blurb: 'A small screen face that scans, blinks, and leans into the cursor.', make: () => new Tube() },
+    { name: 'Jelly', blurb: 'A bell that pulses, trailing four drifting arms.', make: () => new Jelly() },
+    { name: 'Comet', blurb: 'A bright core with a tail that trails its gaze.', make: () => new Comet() },
+    { name: 'Crane', blurb: 'Folded paper, angular wings, ink creases, one coloured beak.', make: () => new Crane() },
+  ];
+
+  const pets = [];
+  const grid = document.getElementById('grid');
+
+  for (const option of OPTIONS) {
+    const cell = document.createElement('article');
+    cell.className = 'cell';
+    cell.tabIndex = 0;
+    cell.setAttribute('role', 'button');
+    cell.setAttribute('aria-pressed', 'false');
+    cell.dataset.name = option.name;
+    cell.innerHTML = `
+      <div class="cell-head"><h2>${option.name}</h2><span class="picked-tag">Selected</span></div>
+      <p class="blurb">${option.blurb}</p>
+      <div class="stage">
+        <canvas class="big" aria-label="${option.name}, enlarged preview"></canvas>
+        <div class="compact"><canvas class="small" aria-label="${option.name} at compact size"></canvas><span>28 px</span></div>
+      </div>`;
+    grid.appendChild(cell);
+    pets.push({ pet: option.make(), big: cell.querySelector('.big'), small: cell.querySelector('.small') });
+
+    const choose = () => select(option.name);
+    cell.addEventListener('click', choose);
+    cell.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        choose();
+      }
+    });
+  }
+
+  let picked = null;
+  function select(name) {
+    picked = name;
+    document.querySelectorAll('.cell').forEach((cell) => {
+      cell.setAttribute('aria-pressed', String(cell.dataset.name === name));
+    });
+    document.getElementById('picked-name').textContent = name;
+  }
+
+  function setAllStates(name) {
+    if (!STATES[name]) return;
+    document.querySelectorAll('.seg button').forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.state === name));
+    });
+    pets.forEach((entry) => entry.pet.setState(name));
+  }
+
+  document.querySelectorAll('.seg button').forEach((button) => {
+    button.addEventListener('click', () => setAllStates(button.dataset.state));
+  });
+  document.getElementById('greet').addEventListener('click', () => {
+    pets.forEach((entry, i) => setTimeout(() => entry.pet.greet(), i * 90));
+  });
+
+  const params = new URLSearchParams(location.search);
+  const forced = params.get('state');
+  if (STATES[forced]) setAllStates(forced);
+
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduced && !params.has('still')) {
+    pets.forEach((entry, i) => setTimeout(() => entry.pet.greet(), 350 + i * 160));
+  }
+
+  let mouseX = null;
+  let mouseY = null;
+  addEventListener('pointermove', (event) => {
+    mouseX = event.clientX;
+    mouseY = event.clientY;
+  });
+  addEventListener('pointerleave', () => {
+    mouseX = null;
+    mouseY = null;
+  });
+
+  function drawTo(canvas, pet) {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    if (!w || !h) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = Math.round(w * dpr);
+    const H = Math.round(h * dpr);
+    if (canvas.width !== W || canvas.height !== H) {
+      canvas.width = W;
+      canvas.height = H;
+    }
+    pet.draw(canvas.getContext('2d'), w, h);
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000) * (reduced ? 0.35 : 1);
+    last = now;
+
+    for (const entry of pets) {
+      if (mouseX === null) {
+        entry.pet.look(0, 0);
+      } else {
+        const rect = entry.big.getBoundingClientRect();
+        const scale = Math.max(120, rect.width * 1.5);
+        entry.pet.look((mouseX - (rect.left + rect.width / 2)) / scale, (mouseY - (rect.top + rect.height / 2)) / scale);
+      }
+      entry.pet.update(dt);
+      drawTo(entry.big, entry.pet);
+      drawTo(entry.small, entry.pet);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+</script>
